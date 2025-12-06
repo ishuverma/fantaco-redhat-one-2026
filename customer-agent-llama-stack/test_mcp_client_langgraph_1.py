@@ -323,7 +323,7 @@ def main():
 
     # Example queries to test
     queries = [
-        "Search for contact name, company name and company id by email address thomashardy@example.com"   
+        "Search company id, company name, and contact name using email address thomashardy@example.com"   
     ]
 
     # Run the conversation

@@ -6,29 +6,36 @@ Based on OpenAPI specification v0
 
 Server Configuration:
     - Transport: streamable HTTP
-    - Port: 9001
-    - Host: 0.0.0.0 (all interfaces)
+    - Port: Configurable via PORT_FOR_CUSTOMER_MCP (default: 9001)
+    - Host: Configurable via HOST_FOR_CUSTOMER_MCP (default: 0.0.0.0)
     - Mode: Read-only (search and get operations only)
 
 Environment Variables:
-    CUSTOMER_API_BASE_URL: Base URL for the Customer API (optional)
-                          Default: http://fantaco-customer-service-fantaco.apps.cluster-5q8cb.5q8cb.sandbox1196.opentlc.com
+    CUSTOMER_API_BASE_URL: Base URL for the Customer API
+    PORT_FOR_CUSTOMER_MCP: Port number for the MCP server (default: 9001)
+    HOST_FOR_CUSTOMER_MCP: Host address to bind to (default: 0.0.0.0) 
+                          
 """
 
 from fastmcp import FastMCP
+from dotenv import load_dotenv
 import asyncio
 import httpx
 import os
+import logging
 from typing import Optional, Dict, Any
 
 # Initialize FastMCP server
 mcp = FastMCP("customer-api")
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Base URL for the Customer API (configurable via environment variable)
-BASE_URL = os.getenv(
-    "CUSTOMER_API_BASE_URL",
-    "http://fantaco-customer-service-fantaco.apps.cluster-5q8cb.5q8cb.sandbox1196.opentlc.com"
-)
+port = int(os.getenv("PORT_FOR_CUSTOMER_MCP"))
+host = os.getenv("HOST_FOR_CUSTOMER_MCP")
+BASE_URL = os.getenv("CUSTOMER_API_BASE_URL")
+
 
 # HTTP client for API calls
 http_client: Optional[httpx.AsyncClient] = None
@@ -132,8 +139,24 @@ async def cleanup():
 
 
 if __name__ == "__main__":
-    # Run the server using HTTP transport on port 9001
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+
+
+    # Log configuration
+    logger.info("=" * 60)
+    logger.info("Customer MCP Server Configuration:")
+    logger.info(f"  CUSTOMER_API_BASE_URL: {BASE_URL}")
+    logger.info(f"  PORT_FOR_CUSTOMER_MCP: {port}")
+    logger.info(f"  HOST_FOR_CUSTOMER_MCP: {host}")
+    logger.info("=" * 60)
+
     try:
-        mcp.run(transport="http", port=9001, host="0.0.0.0")
+        mcp.run(transport="http", port=port, host=host)
     finally:
         asyncio.run(cleanup())
+
