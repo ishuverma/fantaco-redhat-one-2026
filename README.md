@@ -2,6 +2,7 @@
 
 ## Starting the Llama Stack Server
 
+
 ```bash
 ollama serve
 ```
@@ -13,12 +14,29 @@ ollama pull llama3.2:3b
 ```
 
 ```bash
+cd llama-stack-scripts
+```
+
+
+```bash
 export LLAMA_STACK_MODEL="meta-llama/Llama-3.2-3B-Instruct"
 export INFERENCE_MODEL="meta-llama/Llama-3.2-3B-Instruct"
 export LLAMA_STACK_PORT=8321
 export LLAMA_STACK_SERVER=http://localhost:$LLAMA_STACK_PORT
-export LLAMA_STACK_ENDPOINT=$LLAMA_STACK_SERVER
-export LLAMA_STACK_ENDPOINT_OPENAI=$LLAMA_STACK_ENDPOINT/v1/openai/v1
+```
+
+If using MaaS 
+
+```bash
+export VLLM_API_TOKEN=blah
+# https://maas.apps.prod.rhoai.rh-aiservices-bu.com/admin/applications
+export VLLM_URL=https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1
+```
+
+If using Ollama
+
+```bash
+export OLLAMA_URL=http://localhost:11434 
 ```
 
 ```bash
@@ -36,77 +54,11 @@ uv run --with llama-stack llama stack list-deps starter | xargs -L1 uv pip insta
 
 Run the Llama Stack server attaching itself to ollama
 
-
 ```bash
-OLLAMA_URL=http://localhost:11434 uv run --with llama-stack llama stack run starter
+uv run --with llama-stack llama stack run starter
 ```
 
-```bash
-cd llama-stack-scripts
-```
-
-### What models are registered with Llama Stack 
-
-```bash
-export LLAMA_STACK_BASE_URL=http://localhost:8321
-export LLAMA_STACK_OPENAI_ENDPOINT=http://localhost:8321/v1
-export INFERENCE_MODEL=ollama/llama3.2:3b
-export API_KEY=fake
-```
-
-```bash
-curl -sS $LLAMA_STACK_BASE_URL/v1/models -H "Content-Type: application/json" | jq -r '.data[].identifier'
-```
-
-### What are the APIs
-
-```bash
-curl -sS $LLAMA_STACK_BASE_URL/openapi.json | jq '.paths | keys'
-```
-
-### Test Chat Completions API
-
-```bash
-curl -sS $LLAMA_STACK_BASE_URL/v1/chat/completions \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer fake" \
-    -d '{
-       "model": "ollama/llama3.2:3b",
-       "messages": [{"role": "user", "content": "what model are you?"}],
-       "temperature": 0.0
-     }' | jq -r '.choices[0].message.content'
-```   
-
-### Test the Responses API
-
-```bash
-export QUESTION="What is the capital of France?"
-
-curl -sS "$LLAMA_STACK_BASE_URL/v1/responses" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $API_KEY" \
-    -d "{
-      \"model\": \"$INFERENCE_MODEL\",
-      \"input\": \"$QUESTION\"
-    }" | jq -r '.output[0].content[0].text'
-```
-
-### What tools does Llama Stack have?
-
-```bash
-curl -sS -H "Content-Type: application/json" $LLAMA_STACK_BASE_URL/v1/toolgroups | jq
-```
-
-What MCP tools
-
-```bash
-curl -sS -H "Content-Type: application/json" $LLAMA_STACK_BASE_URL/v1/toolgroups | jq -r '.data[] | select(.identifier | endswith("mcp")) | .identifier'
-```
-
-```bash
-curl -sS -H "Content-Type: application/json" $LLAMA_STACK_BASE_URL/v1/toolgroups | jq -r '.data[] | select(.provider_id == 
-  "model-context-protocol") | .identifier'
-```
+Inspect the server by running the scripts in `llama-stack-scripts`
 
 ## Start Customer Backend
 
