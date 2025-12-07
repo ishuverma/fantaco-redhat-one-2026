@@ -9,6 +9,10 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Architecture
+
+![Architecture Diagram](architecture_diagram.png)
+
 ## Follow the numbers
 
 The goal is to arrive at a basic Agent that accepts an email address and finds the orders for that customer.
