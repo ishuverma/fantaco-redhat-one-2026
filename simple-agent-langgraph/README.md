@@ -46,9 +46,30 @@ python 9_langgraph_fastapi.py
 open http://localhost:8000/docs
 ```
 
+### Tests using the MCP Servers
+
 ```bash
 curl -sS "http://localhost:8000/find_orders?email=thomashardy@example.com" | jq
 curl -sS "http://localhost:8000/find_invoices?email=liuwong@example.com" | jq
+```
+
+### Tests using non-customer contacts (not in database)
+
+```bash
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who is Burr Sutter?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who is Natale Vinto of Red Hat?"
+```
+
+### Tests using customer contacts
+
+```bash
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who is Thomas Hardy?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who does Fran Wilson work for?"
+```
+
+```bash
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=list orders for Thomas Hardy?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=get me invoices for Liu Wong?"
 ```
 
 

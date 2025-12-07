@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 BASE_URL = os.getenv("LLAMA_STACK_BASE_URL")
 INFERENCE_MODEL = os.getenv("INFERENCE_MODEL")
 API_KEY = os.getenv("API_KEY")
+FASTAPI_HOST = os.getenv("FASTAPI_HOST", "0.0.0.0")
 FASTAPI_PORT = int(os.getenv("FASTAPI_PORT", "8000"))
 
 logger.info("Configuration loaded:")
 logger.info("  Base URL: %s", BASE_URL)
 logger.info("  Model: %s", INFERENCE_MODEL)
 logger.info("  API Key: %s", "***" if API_KEY else "None")
+logger.info("  FastAPI Host: %s", FASTAPI_HOST)
 logger.info("  FastAPI Port: %s", FASTAPI_PORT)
 
 # Initialize LLM
@@ -158,7 +160,8 @@ def read_root():
         "message": "Customer Orders and Invoices API",
         "endpoints": {
             "find_orders": "/find_orders?email=<customer_email>",
-            "find_invoices": "/find_invoices?email=<customer_email>"
+            "find_invoices": "/find_invoices?email=<customer_email>",
+            "question": "/question?q=<your_question>"
         }
     }
 
@@ -220,6 +223,41 @@ def find_invoices(email: EmailStr):
         raise HTTPException(status_code=500, detail=f"Error finding invoices: {str(e)}")
 
 
+@app.get("/question")
+def ask_question(q: str):
+    """Answer a natural language question using the LangGraph chatbot"""
+    logger.info("=" * 80)
+    logger.info("API: Processing question: %s", q)
+    logger.info("=" * 80)
+
+    try:
+        response = graph.invoke(
+            {"messages": [{"role": "user", "content": q}]})
+
+        # Extract the AI's response from the messages
+        if response and 'messages' in response and len(response['messages']) > 0:
+            last_message = response['messages'][-1]
+            if hasattr(last_message, 'content'):
+                # Handle both string content and list content
+                if isinstance(last_message.content, str):
+                    return {"question": q, "answer": last_message.content}
+                elif isinstance(last_message.content, list):
+                    # Extract text from list content
+                    text_parts = []
+                    for item in last_message.content:
+                        if isinstance(item, dict) and item.get('type') == 'text':
+                            text_parts.append(item.get('text', ''))
+                        elif isinstance(item, str):
+                            text_parts.append(item)
+                    return {"question": q, "answer": " ".join(text_parts)}
+
+        return {"question": q, "answer": "No response generated"}
+
+    except Exception as e:
+        logger.error("Error processing question: %s", str(e))
+        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=FASTAPI_PORT)
+    uvicorn.run(app, host=FASTAPI_HOST, port=FASTAPI_PORT)
