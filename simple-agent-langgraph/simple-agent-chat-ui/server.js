@@ -21,7 +21,7 @@ app.get('/api/question', async (req, res) => {
         console.log(`Forwarding question to FastAPI: ${q}`);
         const response = await axios.get(`${FASTAPI_URL}/question`, {
             params: { q },
-            timeout: 30000 // 30 second timeout
+            timeout: 120000 // 120 second timeout for LLM + MCP tool calls
         });
 
         console.log('Received response from FastAPI');
