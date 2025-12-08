@@ -5,13 +5,23 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Configuration
+
+Create a `.env` file with the following variables:
+
+```env
+FINANCE_API_BASE_URL=http://localhost:8082
+PORT_FOR_FINANCE_MCP=9002
+HOST_FOR_FINANCE_MCP=0.0.0.0
+```
+
 ## Running the Server
 
 ```bash
 python finance-api-mcp-server.py
 ```
 
-The server will start on the configured host and port (default: http://0.0.0.0:9001).
+The server will start on the configured host and port (default: http://0.0.0.0:9002).
 
 ## Tests
 
