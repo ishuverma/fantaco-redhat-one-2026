@@ -32,8 +32,8 @@ mcp = FastMCP("customer-api")
 load_dotenv()
 
 # Base URL for the Customer API (configurable via environment variable)
-port = int(os.getenv("PORT_FOR_CUSTOMER_MCP"))
-host = os.getenv("HOST_FOR_CUSTOMER_MCP")
+port = int(os.getenv("PORT_FOR_CUSTOMER_MCP", "9001"))
+host = os.getenv("HOST_FOR_CUSTOMER_MCP", "0.0.0.0")
 BASE_URL = os.getenv("CUSTOMER_API_BASE_URL")
 
 

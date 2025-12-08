@@ -68,12 +68,16 @@ curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who is Natale V
 
 ```bash
 curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who is Thomas Hardy?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who does Thomas Hardy work for?"
 curl -sS -G "http://localhost:8000/question" --data-urlencode "q=who does Fran Wilson work for?"
 ```
 
 ```bash
 curl -sS -G "http://localhost:8000/question" --data-urlencode "q=list orders for Thomas Hardy?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=find orders for thomashardy@example.com?"
 curl -sS -G "http://localhost:8000/question" --data-urlencode "q=get me invoices for Liu Wong?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=fetch invoices for franwilson@example.com?"
+curl -sS -G "http://localhost:8000/question" --data-urlencode "q=fetch invoices for Fran Wilson?"
 ```
 
 ## Frontend 

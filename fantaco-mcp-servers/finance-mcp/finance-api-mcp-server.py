@@ -6,29 +6,34 @@ Based on OpenAPI specification v0
 
 Server Configuration:
     - Transport: streamable HTTP
-    - Port: 9002
-    - Host: 0.0.0.0 (all interfaces)
+    - Port: Configurable via PORT_FOR_FINANCE_MCP (default: 9002)
+    - Host: Configurable via HOST_FOR_FINANCE_MCP (default: 0.0.0.0)
     - Mode: Read-write (search, get, create, update, delete operations)
 
 Environment Variables:
-    FINANCE_API_BASE_URL: Base URL for the Finance API (optional)
-                          Default: http://fantaco-finance-service-fantaco.apps.cluster-5q8cb.5q8cb.sandbox1196.opentlc.com
+    FINANCE_API_BASE_URL: Base URL for the Finance API
+    PORT_FOR_FINANCE_MCP: Port number for the MCP server (default: 9002)
+    HOST_FOR_FINANCE_MCP: Host address to bind to (default: 0.0.0.0)
 """
 
 from fastmcp import FastMCP
+from dotenv import load_dotenv
 import asyncio
 import httpx
 import os
+import logging
 from typing import Optional, Dict, Any
 
 # Initialize FastMCP server
 mcp = FastMCP("finance-api")
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Base URL for the Finance API (configurable via environment variable)
-BASE_URL = os.getenv(
-    "FINANCE_API_BASE_URL",
-    "http://fantaco-finance-service-fantaco.apps.cluster-5q8cb.5q8cb.sandbox1196.opentlc.com"
-)
+port = int(os.getenv("PORT_FOR_FINANCE_MCP", "9002"))
+host = os.getenv("HOST_FOR_FINANCE_MCP", "0.0.0.0")
+BASE_URL = os.getenv("FINANCE_API_BASE_URL")
 
 # HTTP client for API calls
 http_client: Optional[httpx.AsyncClient] = None
@@ -166,8 +171,22 @@ async def cleanup():
 
 
 if __name__ == "__main__":
-    # Run the server using HTTP transport on port 9002
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+
+    # Log configuration
+    logger.info("=" * 60)
+    logger.info("Finance MCP Server Configuration:")
+    logger.info(f"  FINANCE_API_BASE_URL: {BASE_URL}")
+    logger.info(f"  PORT_FOR_FINANCE_MCP: {port}")
+    logger.info(f"  HOST_FOR_FINANCE_MCP: {host}")
+    logger.info("=" * 60)
+
     try:
-        mcp.run(transport="http", port=9002, host="0.0.0.0")
+        mcp.run(transport="http", port=port, host=host)
     finally:
         asyncio.run(cleanup())
