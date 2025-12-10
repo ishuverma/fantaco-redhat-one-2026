@@ -18,6 +18,9 @@ spec:
       - name: mcp-server
         image: quay.io/burrsutter/mcp-server-finance:1.0.0
         imagePullPolicy: Always
+        env:
+        - name: FINANCE_API_BASE_URL
+          value: http://fantaco-finance-service:8082
         ports:
         - containerPort: 9002
           name: http

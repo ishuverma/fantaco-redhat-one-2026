@@ -18,6 +18,9 @@ spec:
       - name: mcp-server
         image: quay.io/burrsutter/mcp-server-customer:1.0.0
         imagePullPolicy: Always
+        env:
+        - name: CUSTOMER_API_BASE_URL
+          value: http://fantaco-customer-service:8081
         ports:
         - containerPort: 9001
           name: http
