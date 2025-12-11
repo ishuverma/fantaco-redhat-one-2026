@@ -1,0 +1,36 @@
+{{- if .Values.customer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.customer.name }}
+  labels:
+    app: {{ .Values.customer.name }}
+spec:
+  replicas: {{ .Values.customer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.customer.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.customer.name }}
+    spec:
+      containers:
+      - name: mcp-server
+        image: {{ .Values.customer.image.repository }}:{{ .Values.customer.image.tag }}
+        imagePullPolicy: {{ .Values.customer.image.pullPolicy }}
+        env:
+        - name: CUSTOMER_API_BASE_URL
+          value: {{ .Values.customer.env.customerApiBaseUrl | quote }}
+        ports:
+        - containerPort: {{ .Values.customer.service.port }}
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            memory: {{ .Values.customer.resources.requests.memory }}
+            cpu: {{ .Values.customer.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.customer.resources.limits.memory }}
+            cpu: {{ .Values.customer.resources.limits.cpu }}
+{{- end }}

@@ -1,0 +1,17 @@
+{{- if .Values.finance.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.finance.service.name }}
+  labels:
+    app: {{ .Values.finance.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.finance.name }}
+  ports:
+  - name: http
+    port: {{ .Values.finance.service.port }}
+    targetPort: {{ .Values.finance.service.targetPort }}
+    protocol: TCP
+{{- end }}

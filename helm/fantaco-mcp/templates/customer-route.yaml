@@ -1,0 +1,17 @@
+{{- if and .Values.customer.enabled .Values.customer.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.customer.route.name }}
+  labels:
+    app: {{ .Values.customer.name }}
+spec:
+  to:
+    kind: Service
+    name: {{ .Values.customer.service.name }}
+  port:
+    targetPort: http
+  tls:
+    termination: {{ .Values.customer.route.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ .Values.customer.route.tls.insecureEdgeTerminationPolicy }}
+{{- end }}

@@ -1,0 +1,48 @@
+{{- if .Values.postgresql.customer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.postgresql.customer.name }}
+  labels:
+    app: {{ .Values.postgresql.customer.name }}
+spec:
+  replicas: {{ .Values.postgresql.customer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.postgresql.customer.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.postgresql.customer.name }}
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ .Values.postgresql.customer.image.repository }}
+          imagePullPolicy: {{ .Values.postgresql.customer.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.postgresql.customer.service.port }}
+              protocol: TCP
+              name: postgres-cust
+          env:
+            - name: POSTGRESQL_USER
+              value: {{ .Values.postgresql.customer.env.user | quote }}
+            - name: POSTGRESQL_PASSWORD
+              value: {{ .Values.postgresql.customer.env.password | quote }}
+            - name: POSTGRESQL_ADMIN_PASSWORD
+              value: {{ .Values.postgresql.customer.env.adminPassword | quote }}
+            - name: POSTGRESQL_DATABASE
+              value: {{ .Values.postgresql.customer.env.database | quote }}
+          volumeMounts:
+            - name: postgres-customer-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: {{ .Values.postgresql.customer.resources.requests.memory }}
+              cpu: {{ .Values.postgresql.customer.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.postgresql.customer.resources.limits.memory }}
+              cpu: {{ .Values.postgresql.customer.resources.limits.cpu }}
+      volumes:
+        - name: postgres-customer-data
+          emptyDir: {}
+{{- end }}

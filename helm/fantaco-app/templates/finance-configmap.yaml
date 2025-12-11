@@ -1,0 +1,15 @@
+{{- if .Values.finance.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fantaco-finance-config
+  labels:
+    app: {{ .Values.finance.name }}
+data:
+  database.url: {{ .Values.finance.database.url | quote }}
+  database.username: {{ .Values.finance.database.username | quote }}
+  application.properties: |
+    spring.jpa.hibernate.ddl-auto={{ .Values.finance.jpa.hibernate.ddlAuto }}
+    spring.jpa.show-sql={{ .Values.finance.jpa.showSql }}
+    logging.level.com.customer={{ .Values.finance.logging.level }}
+{{- end }}

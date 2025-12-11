@@ -1,0 +1,65 @@
+{{- if .Values.postgresql.finance.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.postgresql.finance.name }}
+  labels:
+    app: {{ .Values.postgresql.finance.name }}
+spec:
+  replicas: {{ .Values.postgresql.finance.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.postgresql.finance.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.postgresql.finance.name }}
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ .Values.postgresql.finance.image.repository }}
+          imagePullPolicy: {{ .Values.postgresql.finance.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.postgresql.finance.service.port }}
+              protocol: TCP
+              name: postgres-fin
+          env:
+            - name: POSTGRESQL_USER
+              value: {{ .Values.postgresql.finance.env.user | quote }}
+            - name: POSTGRESQL_PASSWORD
+              value: {{ .Values.postgresql.finance.env.password | quote }}
+            - name: POSTGRESQL_ADMIN_PASSWORD
+              value: {{ .Values.postgresql.finance.env.adminPassword | quote }}
+            - name: POSTGRESQL_DATABASE
+              value: {{ .Values.postgresql.finance.env.database | quote }}
+          volumeMounts:
+            - name: postgres-finance-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.postgresql.finance.service.port }}
+            initialDelaySeconds: {{ .Values.postgresql.finance.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgresql.finance.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgresql.finance.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.postgresql.finance.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U postgres -d {{ .Values.postgresql.finance.env.database }}
+            initialDelaySeconds: {{ .Values.postgresql.finance.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.postgresql.finance.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.postgresql.finance.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.postgresql.finance.readinessProbe.failureThreshold }}
+          resources:
+            requests:
+              memory: {{ .Values.postgresql.finance.resources.requests.memory }}
+              cpu: {{ .Values.postgresql.finance.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.postgresql.finance.resources.limits.memory }}
+              cpu: {{ .Values.postgresql.finance.resources.limits.cpu }}
+      volumes:
+        - name: postgres-finance-data
+          emptyDir: {}
+{{- end }}

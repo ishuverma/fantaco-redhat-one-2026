@@ -1,0 +1,18 @@
+{{- if and .Values.finance.enabled .Values.finance.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.finance.route.name }}
+  labels:
+    app: {{ .Values.finance.name }}
+spec:
+  port:
+    targetPort: http
+  tls:
+    insecureEdgeTerminationPolicy: {{ .Values.finance.route.tls.insecureEdgeTerminationPolicy }}
+    termination: {{ .Values.finance.route.tls.termination }}
+  to:
+    kind: Service
+    name: {{ .Values.finance.service.name }}
+    weight: 100
+{{- end }}

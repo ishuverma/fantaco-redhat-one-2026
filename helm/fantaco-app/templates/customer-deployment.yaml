@@ -1,0 +1,65 @@
+{{- if .Values.customer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.customer.name }}
+  labels:
+    app: {{ .Values.customer.name }}
+spec:
+  replicas: {{ .Values.customer.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.customer.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.customer.name }}
+    spec:
+      containers:
+      - name: {{ .Values.customer.name }}
+        image: {{ .Values.customer.image.repository }}:{{ .Values.customer.image.tag }}
+        imagePullPolicy: {{ .Values.customer.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.customer.service.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fantaco-customer-config
+              key: database.url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: fantaco-customer-config
+              key: database.username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fantaco-customer-secret
+              key: database.password
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.customer.livenessProbe.path }}
+            port: {{ .Values.customer.livenessProbe.port }}
+          initialDelaySeconds: {{ .Values.customer.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.customer.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.customer.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.customer.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.customer.readinessProbe.path }}
+            port: {{ .Values.customer.readinessProbe.port }}
+          initialDelaySeconds: {{ .Values.customer.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.customer.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.customer.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.customer.readinessProbe.failureThreshold }}
+        resources:
+          limits:
+            cpu: {{ .Values.customer.resources.limits.cpu }}
+            memory: {{ .Values.customer.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.customer.resources.requests.cpu }}
+            memory: {{ .Values.customer.resources.requests.memory }}
+{{- end }}

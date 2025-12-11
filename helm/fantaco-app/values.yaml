@@ -1,0 +1,155 @@
+customer:
+  enabled: true
+  name: fantaco-customer-main
+  replicas: 1
+  image:
+    repository: quay.io/burrsutter/fantaco-customer-main
+    tag: 1.0.0
+    pullPolicy: Always
+  service:
+    name: fantaco-customer-service
+    port: 8081
+    targetPort: 8081
+  route:
+    enabled: true
+    name: fantaco-customer-service
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  database:
+    url: jdbc:postgresql://postgres-cust:5432/fantaco_customer
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddlAuto: update
+    showSql: false
+  logging:
+    level: INFO
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  livenessProbe:
+    path: /actuator/health/liveness
+    port: 8081
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    path: /actuator/health/readiness
+    port: 8081
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+finance:
+  enabled: true
+  name: fantaco-finance-main
+  replicas: 1
+  image:
+    repository: quay.io/burrsutter/fantaco-finance-main
+    tag: 1.0.0
+    pullPolicy: Always
+  service:
+    name: fantaco-finance-service
+    port: 8082
+    targetPort: 8082
+  route:
+    enabled: true
+    name: fantaco-finance-service
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  database:
+    url: jdbc:postgresql://postgres-fin:5432/fantaco_finance
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddlAuto: update
+    showSql: false
+  logging:
+    level: INFO
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  livenessProbe:
+    path: /api/finance/health
+    port: 8082
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    path: /api/finance/health
+    port: 8082
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+postgresql:
+  customer:
+    enabled: true
+    name: postgresql-customer
+    replicas: 1
+    image:
+      repository: registry.redhat.io/rhel9/postgresql-15
+      pullPolicy: IfNotPresent
+    service:
+      name: postgres-cust
+      port: 5432
+    env:
+      user: customer
+      password: customer
+      adminPassword: postgres
+      database: fantaco_customer
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  finance:
+    enabled: true
+    name: postgresql-finance
+    replicas: 1
+    image:
+      repository: registry.redhat.io/rhel9/postgresql-15
+      pullPolicy: IfNotPresent
+    service:
+      name: postgres-fin
+      port: 5432
+    env:
+      user: finance
+      password: finance
+      adminPassword: postgres
+      database: fantaco_finance
+    livenessProbe:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m

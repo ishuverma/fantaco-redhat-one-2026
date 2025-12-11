@@ -1,0 +1,65 @@
+{{- if .Values.finance.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.finance.name }}
+  labels:
+    app: {{ .Values.finance.name }}
+spec:
+  replicas: {{ .Values.finance.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.finance.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.finance.name }}
+    spec:
+      containers:
+      - name: {{ .Values.finance.name }}
+        image: {{ .Values.finance.image.repository }}:{{ .Values.finance.image.tag }}
+        imagePullPolicy: {{ .Values.finance.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.finance.service.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fantaco-finance-config
+              key: database.url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: fantaco-finance-config
+              key: database.username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fantaco-finance-secret
+              key: database.password
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.finance.livenessProbe.path }}
+            port: {{ .Values.finance.livenessProbe.port }}
+          initialDelaySeconds: {{ .Values.finance.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.finance.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.finance.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.finance.livenessProbe.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.finance.readinessProbe.path }}
+            port: {{ .Values.finance.readinessProbe.port }}
+          initialDelaySeconds: {{ .Values.finance.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.finance.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.finance.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.finance.readinessProbe.failureThreshold }}
+        resources:
+          limits:
+            cpu: {{ .Values.finance.resources.limits.cpu }}
+            memory: {{ .Values.finance.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.finance.resources.requests.cpu }}
+            memory: {{ .Values.finance.resources.requests.memory }}
+{{- end }}

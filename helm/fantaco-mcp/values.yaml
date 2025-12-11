@@ -1,0 +1,55 @@
+customer:
+  enabled: true
+  name: mcp-customer
+  replicas: 1
+  image:
+    repository: quay.io/burrsutter/mcp-server-customer
+    tag: 1.0.0
+    pullPolicy: Always
+  service:
+    name: mcp-customer-service
+    port: 9001
+    targetPort: 9001
+  route:
+    enabled: true
+    name: mcp-customer-route
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  env:
+    customerApiBaseUrl: http://fantaco-customer-service:8081
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 500m
+
+finance:
+  enabled: true
+  name: mcp-finance
+  replicas: 1
+  image:
+    repository: quay.io/burrsutter/mcp-server-finance
+    tag: 1.0.0
+    pullPolicy: Always
+  service:
+    name: mcp-finance-service
+    port: 9002
+    targetPort: 9002
+  route:
+    enabled: true
+    name: mcp-finance-route
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  env:
+    financeApiBaseUrl: http://fantaco-finance-service:8082
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 500m
