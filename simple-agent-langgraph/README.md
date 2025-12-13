@@ -17,7 +17,19 @@ pip install -r requirements.txt
 
 The goal is to arrive at a basic Agent that accepts an email address and finds the orders for that customer.
 
+```bash
+cp .env.example .env
 ```
+
+And edit accordingly
+
+```bash
+set -a
+source .env
+set +a
+```
+
+```bash
 python 7_langgraph_client_list_orders_any_customer.py <email-address>
 ```
 

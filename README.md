@@ -27,6 +27,8 @@ cd llama-stack-scripts
 export LLAMA_STACK_BASE_URL=http://localhost:8321
 export INFERENCE_MODEL=ollama/llama3.2:3b
 # export INFERENCE_MODEL=vllm/llama-4-scout-17b-16e-w4a16
+export LLAMA_STACK_LOG_FILE=logs/llama-stack-server.log
+export LLAMA_STACK_LOGGING="tools=debug,providers=debug,server=info"
 ```
 
 If using Ollama
@@ -60,13 +62,19 @@ uv run --with llama-stack llama stack list-deps starter | xargs -L1 uv pip insta
 
 Run the Llama Stack server attaching itself to ollama
 
+
 ```bash
 uv run --with llama-stack llama stack run starter
 ```
 
 Inspect the server by running the scripts in `llama-stack-scripts`
 
+Note: Llama Stack persists state to `~/.llama/` 
+specifically `~/.llama/distributions/starter` when using the `run starter` command above.   If you want a clean start:
 
+```bash
+rm -rf ~/.llama/distributions/starter
+```
 
 ## Start Customer Backend
 
