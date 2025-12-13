@@ -36,7 +36,7 @@ customer:
   livenessProbe:
     path: /actuator/health/liveness
     port: 8081
-    initialDelaySeconds: 30
+    initialDelaySeconds: 90
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
@@ -86,7 +86,7 @@ finance:
   livenessProbe:
     path: /api/finance/health
     port: 8082
-    initialDelaySeconds: 30
+    initialDelaySeconds: 90
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
