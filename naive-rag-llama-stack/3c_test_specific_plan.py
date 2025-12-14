@@ -7,39 +7,35 @@ load_dotenv()
 
 # Get configuration from environment
 LLAMA_STACK_BASE_URL = os.getenv("LLAMA_STACK_BASE_URL", "http://localhost:8321")
-INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "vllm/qwen3-14b-gaudi")
+INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "ollama/qwen3:14b-q8_0")
 
 # Initialize client
 client = LlamaStackClient(base_url=LLAMA_STACK_BASE_URL)
 
 # Get the vector store
-vector_stores = client.vector_stores.list()
-vector_store = None
-for vs in vector_stores:
-    if vs.name == "my-documents-text":
-        vector_store = vs
-        break
-
-if not vector_store:
-    print("Error: Vector store 'my-documents-text' not found. Please run 1b_create_vector_store_with_text.py first.")
+vector_stores = list(client.vector_stores.list())
+matching_stores = [vs for vs in vector_stores if vs.name == "hr-benefits-clean"]
+if matching_stores:
+    vector_store = max(matching_stores, key=lambda vs: vs.created_at)
+else:
+    print("Error: Vector store 'hr-benefits-clean' not found.")
     exit(1)
 
 print(f"Using vector store: {vector_store.id}")
 print(f"Using model: {INFERENCE_MODEL}")
 print("-" * 80)
 
-# Define the query
-query = "How do you do great work?"
+# Query that matches the section title more closely
+query = "What is included in the Midas Touch and Beyond Retirement Plan golden years?"
 
-print(f"Query: {query}\n")
+print(f"\nQuery: {query}")
 print("Agent Response:")
 print("-" * 80)
 
-# Create agent with file_search tool for RAG
 agent = Agent(
     client,
     model=INFERENCE_MODEL,
-    instructions="You are a helpful assistant that answers questions based on the provided documents.",
+    instructions="You MUST use the file_search tool to answer ALL questions by searching the provided documents. Provide detailed information from the documents.",
     tools=[
         {
             "type": "file_search",
@@ -48,14 +44,13 @@ agent = Agent(
     ],
 )
 
-# Create a session and ask the question
-session_id = agent.create_session("great-work-query")
+session_id = agent.create_session("specific-plan-query")
 response = agent.create_turn(
     messages=[{"role": "user", "content": query}],
     session_id=session_id,
     stream=True,
 )
 
-# Stream the response
 for log in AgentEventLogger().log(response):
     print(log, end="")
+print("\n")
