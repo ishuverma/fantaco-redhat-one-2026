@@ -2,8 +2,8 @@ const express = require('express');
 const axios = require('axios');
 
 const app = express();
-const CHAT_UI_PORT = process.env.CHAT_UI_PORT || 3000;
-const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8000';
+const CHAT_UI_PORT = process.env.CHAT_UI_PORT || 3001;
+const FASTAPI_URL = process.env.FASTAPI_URL || 'http://localhost:8001';
 
 // Middleware
 app.use(express.json());
