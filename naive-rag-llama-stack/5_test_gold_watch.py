@@ -27,9 +27,6 @@ print("-" * 80)
 
 # Try multiple queries
 queries = [
-#    "Tell me about the Midas Touch retirement plan",
-#    "What is the 401(k) retirement plan",
-    # "What benefits do I get when I retire from FantaCo",
     "When do I get my gold watch?",
 ]
 
