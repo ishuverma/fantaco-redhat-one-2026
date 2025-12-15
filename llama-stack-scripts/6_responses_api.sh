@@ -1,4 +1,4 @@
-export QUESTION="What is the capital of France?"
+export QUESTION="What is the capital of Italy?"
 
 curl -sS "$LLAMA_STACK_BASE_URL/v1/responses" \
     -H "Content-Type: application/json" \
