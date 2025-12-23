@@ -26,7 +26,7 @@ The server will start on `http://localhost:8002` (or the port specified in your 
 Check if the server is running and MCP clients are connected:
 
 ```bash
-curl -s http://localhost:8002/health | python -m json.tool
+curl -s http://localhost:8002/health | python3 -m json.tool
 ```
 
 **Expected Response:**
@@ -45,13 +45,13 @@ curl -s http://localhost:8002/health | python -m json.tool
 Get information about the API and available tools:
 
 ```bash
-curl -s http://localhost:8002/ | python -m json.tool
+curl -s http://localhost:8002/ | python3 -m json.tool
 ```
 
 **Expected Response:**
 ```json
 {
-    "message": "LangGraph MCP Customer Service API",
+    "message": "LangGraph MCP Customer and Finance Service API",
     "version": "1.0.0",
     "status": "running",
     "available_tools": [

@@ -1,38 +1,48 @@
-# LangGraph Agent with Langfuse Tracing - Simple Teaching Demo
+# LangGraph Agent with Langfuse Tracing and MCP Integration
 
 ## Overview
 
-This is a simplified implementation for **teaching purposes** focused on demonstrating:
-- **LangGraph** agent workflow
+This implementation demonstrates:
+- **LangGraph** agent workflow with conditional routing
 - **Langfuse** observability and tracing
-- **FastAPI** backend with simple chat endpoint
-- **React** frontend with minimal UI
+- **MCP (Model Context Protocol)** integration for tool calling
+- **FastAPI** backend with chat endpoint
+- **React** frontend with chat UI
 
-The goal is to show how traces appear in Langfuse with minimal complexity.
+The goal is to show how LangGraph agents can use MCP tools with full Langfuse tracing.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────┐
 │         React Frontend (Port 3002)      │
-│         - Simple chat interface         │
-│         - HTTP requests only            │
+│         - Chat interface                │
+│         - Session management            │
 └─────────────────────────────────────────┘
-                   │ HTTP POST
+                   │ HTTP POST /chat
                    ▼
 ┌─────────────────────────────────────────┐
 │      FastAPI Backend (Port 8002)        │
 │  ┌───────────────────────────────────┐  │
 │  │      LangGraph Agent              │  │
-│  │      - Simple conversation        │  │
+│  │      - LLM node (conditional)     │  │
+│  │      - Tools node                 │  │
 │  │      - Langfuse callbacks         │  │
 │  └───────────────────────────────────┘  │
 └─────────────────────────────────────────┘
-                   │
-                   ▼
+         │                      │
+         │ LLM calls            │ MCP tool calls
+         ▼                      ▼
+┌──────────────────┐   ┌─────────────────────┐
+│ LLM Provider     │   │  MCP Servers        │
+│ (Ollama/OpenAI)  │   │  - Customer (9001)  │
+│                  │   │  - Finance (9002)   │
+└──────────────────┘   └─────────────────────┘
+         │
+         ▼
 ┌─────────────────────────────────────────┐
-│  - LLM Provider (OpenAI/vLLM)           │
-│  - Langfuse Server (tracing)            │
+│  Langfuse Server (tracing)              │
+│  - Traces, spans, metrics               │
 └─────────────────────────────────────────┘
 ```
 
@@ -44,6 +54,7 @@ The goal is to show how traces appear in Langfuse with minimal complexity.
 - LangGraph 0.2.59
 - LangChain Core 0.3.28
 - LangChain OpenAI 0.2.14
+- LangChain MCP Adapters (for MCP tool integration)
 - Langfuse 3.11.0+
 - Uvicorn 0.34.0
 
@@ -56,14 +67,14 @@ The goal is to show how traces appear in Langfuse with minimal complexity.
 
 ## Backend Implementation
 
-### 1. Simplified Project Structure
+### 1. Project Structure
 
 ```
 backend/
-├── main.py              # All code in one file for simplicity
+├── 6-langgraph-langfuse-fastapi.py  # FastAPI app with LangGraph + MCP
 ├── requirements.txt
 ├── .env.example
-└── .env                 # Your actual credentials
+└── .env                              # Your actual credentials
 ```
 
 ### 2. Dependencies
@@ -77,9 +88,9 @@ langchain-core==0.3.28
 langchain-openai==0.2.14
 langfuse==3.11.0
 pydantic==2.10.3
-pydantic-settings==2.7.0
 python-dotenv==1.0.1
 httpx==0.27.0
+# Note: langchain-mcp-adapters is also required for MCP integration
 ```
 
 ### 3. Environment Configuration
@@ -88,10 +99,10 @@ httpx==0.27.0
 # .env.example
 # LLM Configuration
 API_KEY=your_api_key_here
-INFERENCE_MODEL=gpt-4o-mini
-BASE_URL=https://api.openai.com/v1
+INFERENCE_MODEL=qwen3:14b-q8_0
+BASE_URL=http://localhost:11434/v1
 
-# For vLLM instead of OpenAI, use:
+# For vLLM instead of Ollama, use:
 # BASE_URL=http://localhost:8000/v1
 # INFERENCE_MODEL=meta-llama/Llama-3.1-8B-Instruct
 
@@ -108,10 +119,19 @@ FINANCE_MCP_SERVER_URL=http://localhost:9002/mcp
 PORT=8002
 ```
 
-### 4. Complete Backend Implementation (main.py)
+### 4. Backend Implementation
+
+**Note:** The actual implementation in `6-langgraph-langfuse-fastapi.py` is more complex with MCP tool integration.
+Below is a simplified example showing the core concepts. See the actual file for the complete implementation with:
+- MCP client initialization (customer and finance servers)
+- Multi-node LangGraph workflow (LLM node + tools node)
+- Conditional routing based on tool calls
+- Tool execution with Langfuse tracing
+
+#### Simplified Example (main.py)
 
 ```python
-# main.py
+# main.py - Simplified example
 import os
 import uuid
 import logging
@@ -300,9 +320,9 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """Chat response to frontend."""
-    message: str
-    session_id: str
-    user_id: str
+    reply: str                         # Changed from 'message' to 'reply' in actual implementation
+    tool_result: Any = None           # Added in actual implementation
+    trace_id: Optional[str] = None    # Added in actual implementation
 
 
 # ============================================================================
@@ -315,12 +335,14 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.post("/api/v1/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse)  # Actual implementation uses /chat not /api/v1/chat
 async def chat(request: ChatRequest):
     """
-    Simple chat endpoint.
+    Chat endpoint.
     Sends message to agent and returns response.
     All interactions are traced in Langfuse!
+
+    In actual implementation, this processes through LangGraph with MCP tools.
     """
 
     try:
@@ -353,9 +375,9 @@ async def chat(request: ChatRequest):
         logger.info(f"Response preview: {ai_message.content[:100]}...")
 
         return ChatResponse(
-            message=ai_message.content,
-            session_id=session_id,
-            user_id=user_id
+            reply=ai_message.content,  # Changed from 'message' to 'reply' in actual implementation
+            tool_result=None,
+            trace_id=None
         )
 
     except Exception as e:
@@ -518,7 +540,7 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/v1/chat`, {
+      const response = await axios.post(`${API_URL}/chat`, {  // Changed from /api/v1/chat to /chat
         message: input,
         session_id: sessionId,
         user_id: 'demo-user',
@@ -526,7 +548,7 @@ function App() {
 
       const aiMessage = {
         role: 'assistant',
-        content: response.data.message,
+        content: response.data.reply,  // Changed from 'message' to 'reply'
         timestamp: new Date(),
       };
 
@@ -709,7 +731,7 @@ cp .env.example .env
 # - Configure LANGFUSE_BASE_URL
 
 # Run the server
-python main.py
+python 6-langgraph-langfuse-fastapi.py
 ```
 
 Backend will be available at `http://localhost:8002`
@@ -770,18 +792,27 @@ When you send messages through the chat, Langfuse will capture:
 
 2. **LangGraph Workflow**:
    - State definition with `TypedDict`
-   - Simple graph with one node
+   - Multi-node graph (LLM + tools nodes)
+   - Conditional routing based on tool calls
    - Message handling with `add_messages`
 
-3. **FastAPI Backend**:
+3. **MCP Integration**:
+   - MultiServerMCPClient for connecting to MCP servers
+   - Tool discovery from multiple MCP servers
+   - Tool binding to LLM
+   - Tool execution with callbacks
+
+4. **FastAPI Backend**:
    - Environment-based configuration
    - CORS setup for local development
-   - Simple REST API
+   - REST API with /chat endpoint
+   - Lifespan management for MCP clients
 
-4. **React Frontend**:
-   - Single-component simplicity
+5. **React Frontend**:
+   - Single-component chat UI
    - Axios for HTTP requests
    - Session ID management
+   - Real-time loading states
 
 ## Customization
 
@@ -797,27 +828,39 @@ API_KEY=not-needed-for-vllm
 
 ### Add More Agent Functionality
 
-To add tools or more complex workflows, modify the `agent_node` function and graph structure in `main.py`.
+The actual implementation in `6-langgraph-langfuse-fastapi.py` already includes:
+- MCP tool integration with customer and finance servers
+- Multi-node LangGraph workflow with conditional routing
+- Full Langfuse tracing for all LLM and tool calls
+
+To add more functionality:
+- Add more MCP servers in the lifespan function
+- Modify the graph structure to add more nodes
+- Update the system message to guide tool usage
 
 ## Troubleshooting
 
 ### Common Issues:
 
-1. **CORS errors**: Make sure backend CORS allows `http://localhost:3002`
+1. **CORS errors**: Make sure backend CORS allows `http://localhost:3002` (or `*` for development)
 2. **Langfuse not showing traces**: Verify your Langfuse keys and BASE_URL
 3. **LLM errors**: Check your API_KEY and BASE_URL are correct
 4. **Port conflicts**: Change PORT in backend `.env` and VITE_API_URL in frontend `.env`
+5. **MCP connection errors**: Ensure customer and finance MCP servers are running on ports 9001 and 9002
+6. **Tool not found errors**: Check that MCP servers are properly initialized in the lifespan function
 
 ## Next Steps for Students
 
-After understanding this basic setup:
+After understanding this setup:
 
-1. Add a simple tool (e.g., current time lookup)
-2. Implement conversation memory/history
-3. Add user authentication
-4. Explore different LLM models
-5. Analyze traces in Langfuse dashboard
-6. Try different prompt engineering techniques
+1. Explore the MCP tool integration in `6-langgraph-langfuse-fastapi.py`
+2. Add more MCP servers with additional tools
+3. Implement conversation memory/history across sessions
+4. Add user authentication
+5. Explore different LLM models (OpenAI, vLLM, Ollama)
+6. Analyze traces in Langfuse dashboard
+7. Try different prompt engineering techniques
+8. Experiment with different graph structures and conditional routing
 
 ## References
 

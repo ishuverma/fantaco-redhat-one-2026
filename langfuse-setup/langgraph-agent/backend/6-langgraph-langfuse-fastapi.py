@@ -275,7 +275,7 @@ Be concise and helpful.""")
 async def root():
     """Root endpoint"""
     return {
-        "message": "LangGraph MCP Customer Service API",
+        "message": "LangGraph MCP Customer and FinanceService API",
         "version": "1.0.0",
         "status": "running",
         "available_tools": [t.name for t in all_tools]

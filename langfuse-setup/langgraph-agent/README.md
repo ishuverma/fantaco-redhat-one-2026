@@ -33,7 +33,7 @@ cp .env.example .env
 # - LANGFUSE_BASE_URL (default: https://cloud.langfuse.com)
 
 # Run the server
-python main.py
+python 6-langgraph-langfuse-fastapi.py
 ```
 
 The backend will start on `http://localhost:8002`
@@ -142,7 +142,7 @@ When you send messages, Langfuse will capture:
 ```
 .
 ├── backend/
-│   ├── main.py              # FastAPI app with LangGraph agent
+│   ├── 6-langgraph-langfuse-fastapi.py   # FastAPI app with LangGraph agent
 │   ├── requirements.txt     # Python dependencies
 │   └── .env.example        # Environment variables template
 ├── frontend/
@@ -165,6 +165,7 @@ When you send messages, Langfuse will capture:
 
 ![Langfuse Trace 1](images/langfuse-trace-1.png)
 
+[Video Demo](https://youtu.be/VFldGFVgUvk)
 
 
 ## Learning Resources

@@ -35,7 +35,7 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/v1/chat`, {
+      const response = await axios.post(`${API_URL}/chat`, {
         message: input,
         session_id: sessionId,
         user_id: 'demo-user',
@@ -43,7 +43,7 @@ function App() {
 
       const aiMessage = {
         role: 'assistant',
-        content: response.data.message,
+        content: response.data.reply,
         timestamp: new Date(),
       };
 
