@@ -4,7 +4,7 @@
   |-----------------------------|------------|-------------------|
   | Input/Output Safety Shields | Supported  | Not yet supported |
 
-  Agents let you specify input/output shields whereas Responses do not (though support is planned).
+  Agents let you specify input/output shields while Responses API does not (though support is planned).
 
   When to use each:
 
