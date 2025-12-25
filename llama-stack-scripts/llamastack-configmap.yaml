@@ -68,6 +68,10 @@ data:
             db_path: /opt/app-root/src/.llama/distributions/rh/huggingface_datasetio.db
             namespace: null
             type: sqlite
+      safety:
+      - provider_id: llama-guard
+        provider_type: inline::llama-guard
+        config: {}
       scoring:
       - provider_id: basic
         provider_type: inline::basic
