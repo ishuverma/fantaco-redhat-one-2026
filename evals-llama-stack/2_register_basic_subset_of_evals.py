@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("llama_stack_client").setLevel(logging.WARNING)
 
-DATASET_ID = "basic-equality-evals"
+DATASET_ID = "basic-subset-of-evals"
 DEFAULT_DATASET_URI = (
     "https://raw.githubusercontent.com/burrsutter/fantaco-redhat-one-2026/main/"
-    "evals-llama-stack/datasets/basic-equality-evals.csv"
+    "evals-llama-stack/datasets/basic-subset-of-evals.csv"
 )
 
 

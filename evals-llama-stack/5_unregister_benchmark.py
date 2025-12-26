@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unregister the basic-equality-evals dataset from a Llama Stack server.
+Unregister a benchmark from a Llama Stack server.
 """
 
 import logging
@@ -8,7 +8,8 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from llama_stack_client import LlamaStackClient
+from llama_stack_client import LlamaStackClient, NoneType
+from llama_stack_client._models import FinalRequestOptions
 
 # Configure logging
 logging.basicConfig(
@@ -22,8 +23,6 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("llama_stack_client").setLevel(logging.WARNING)
 
-DATASET_ID = "basic-equality-evals"
-
 
 def main():
     # Load environment variables from .env file
@@ -34,19 +33,27 @@ def main():
         logger.error("LLAMA_STACK_BASE_URL environment variable is not set")
         sys.exit(1)
 
+    benchmark_id = os.getenv("LLAMA_STACK_BENCHMARK_ID", "my-basic-quality-benchmark")
+
     logger.info(f"Connecting to Llama Stack server at: {base_url}")
-    logger.info(f"Unregistering dataset: {DATASET_ID}")
+    logger.info(f"Unregistering benchmark: {benchmark_id}")
 
     # Create the Llama Stack client
     client = LlamaStackClient(base_url=base_url)
 
+    opts = FinalRequestOptions.construct(
+        method="delete",
+        url=f"/v1alpha/eval/benchmarks/{benchmark_id}",
+        headers={"Accept": "*/*"},
+    )
+
     try:
-        client.datasets.unregister(DATASET_ID)
+        client.request(NoneType, opts)
     except Exception as exc:
-        logger.error(f"Failed to unregister dataset: {exc}")
+        logger.error(f"Failed to unregister benchmark: {exc}")
         sys.exit(1)
 
-    logger.info("Dataset unregistered successfully")
+    logger.info("Benchmark unregistered successfully")
 
 
 if __name__ == "__main__":

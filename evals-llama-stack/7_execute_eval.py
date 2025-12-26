@@ -32,9 +32,9 @@ def main():
         logger.error("LLAMA_STACK_BASE_URL environment variable is not set")
         sys.exit(1)
 
-    model_id = os.getenv("JUDGE_MODEL")
+    model_id = os.getenv("INFERENCE_MODEL")
     if not model_id:
-        logger.error("JUDGE_MODEL environment variable is not set")
+        logger.error("INFERENCE_MODEL environment variable is not set")
         sys.exit(1)
 
     benchmark_id = os.getenv("LLAMA_STACK_BENCHMARK_ID", "my-basic-quality-benchmark")
@@ -55,7 +55,7 @@ def main():
             },
         },
         "scoring_params": {
-            "basic::equality": {
+            "basic::subset_of": {
                 "type": "basic",
                 "aggregation_functions": ["accuracy"],
             },

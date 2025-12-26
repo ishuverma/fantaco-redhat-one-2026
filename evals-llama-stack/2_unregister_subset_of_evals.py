@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Register a benchmark with a Llama Stack server.
+Unregister the basic-equality-evals dataset from a Llama Stack server.
 """
 
 import logging
@@ -8,7 +8,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from llama_stack_client import LlamaStackClient, NotFoundError
+from llama_stack_client import LlamaStackClient
 
 # Configure logging
 logging.basicConfig(
@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("llama_stack_client").setLevel(logging.WARNING)
 
+DATASET_ID = "basic-subset-of-evals"
+
 
 def main():
     # Load environment variables from .env file
@@ -33,31 +35,18 @@ def main():
         sys.exit(1)
 
     logger.info(f"Connecting to Llama Stack server at: {base_url}")
+    logger.info(f"Unregistering dataset: {DATASET_ID}")
 
     # Create the Llama Stack client
     client = LlamaStackClient(base_url=base_url)
 
-    provider_id = os.getenv("LLAMA_STACK_BENCHMARK_PROVIDER_ID")
-    if provider_id:
-        logger.info(f"Using benchmark provider: {provider_id}")
-
-    logger.info("Registering benchmark: my-basic-quality-benchmark")
-
     try:
-        client.benchmarks.register(
-            benchmark_id="my-basic-quality-benchmark",
-            dataset_id="basic-equality-evals",
-            scoring_functions=["basic::subset_of"]
-        )
-    except NotFoundError as exc:
-        logger.error(f"Failed to register benchmark: {exc}")
-        logger.error("Benchmark API not found. Enable the eval API in your Llama Stack run.yaml and restart.")
-        sys.exit(1)
+        client.datasets.unregister(DATASET_ID)
     except Exception as exc:
-        logger.error(f"Failed to register benchmark: {exc}")
+        logger.error(f"Failed to unregister dataset: {exc}")
         sys.exit(1)
 
-    logger.info("Benchmark registered successfully")
+    logger.info("Dataset unregistered successfully")
 
 
 if __name__ == "__main__":
