@@ -57,6 +57,7 @@ Provide a score from 1-5 and explain your reasoning."""
     logger.info(f"Connecting to Llama Stack server at: {LLAMA_STACK_BASE_URL}")
     logger.info(f"Registering scoring function: {SCORING_FN_ID}")
     logger.info(f"Using judge model: {JUDGE_MODEL}")
+    logger.info(f"Using candidate model: {INFERENCE_MODEL}")
 
     # Create the Llama Stack client
     client = LlamaStackClient(base_url=LLAMA_STACK_BASE_URL)
@@ -110,7 +111,35 @@ Provide a score from 1-5 and explain your reasoning."""
     )
     logger.info(f"Eval job started: {job.job_id}")
     result = client.alpha.eval.jobs.retrieve(job_id=job.job_id, benchmark_id=BENCHMARK_ID)
-    print(result)
+
+    # Format and display results
+    print("\n" + "=" * 80)
+    print("EVALUATION RESULTS")
+    print("=" * 80)
+
+    generations = result.generations
+    score_rows = result.scores.get(SCORING_FN_ID).score_rows if result.scores else []
+
+    for i, gen in enumerate(generations):
+        print(f"\n--- Evaluation {i + 1} ---")
+        generated_answer = gen.get("generated_answer", "N/A")
+        # Truncate long answers for display
+        if len(generated_answer) > 200:
+            display_answer = generated_answer[:200] + "..."
+        else:
+            display_answer = generated_answer
+        print(f"Generated Answer: {display_answer}")
+
+        if i < len(score_rows):
+            score_row = score_rows[i]
+            score = score_row.get("score", "N/A")
+            feedback = score_row.get("judge_feedback", "N/A")
+            print(f"Score: {score}")
+            print(f"Judge Feedback:\n{feedback}")
+
+    print("\n" + "=" * 80)
+    print(f"Total evaluations: {len(generations)}")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
