@@ -60,6 +60,10 @@ data:
             db_path: /opt/app-root/src/.llama/distributions/rh/eval_store.db
             namespace: null
             type: sqlite
+      safety:
+      - provider_id: llama-guard
+        provider_type: inline::llama-guard
+        config: {}            
       files:
       - provider_id: meta-reference-files
         provider_type: inline::localfs
