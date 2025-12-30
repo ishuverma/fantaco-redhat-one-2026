@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Register a scoring function and benchmark using an LLM as a judge.
+Agent evaluation using LLM as a judge with customer MCP tools.
 """
 
 import logging
@@ -26,12 +26,13 @@ logging.getLogger("llama_stack_client").setLevel(logging.WARNING)
 def main():
     # Load environment variables from .env file
     load_dotenv()
-    DATASET_ID = "basic-subset-of-evals"
-    SCORING_FN_ID = "my-llm-as-judge-scoring-fn"
-    BENCHMARK_ID = "my-llm-as-judge-benchmark"
+    DATASET_ID = "agent-evals-customer"
+    SCORING_FN_ID = "agent-llm-as-judge-scoring-fn"
+    BENCHMARK_ID = "agent-llm-as-judge-benchmark"
     LLAMA_STACK_BASE_URL = os.getenv("LLAMA_STACK_BASE_URL", "http://localhost:8321")
     JUDGE_MODEL = os.getenv("JUDGE_MODEL")
     INFERENCE_MODEL = os.getenv("INFERENCE_MODEL")
+    CUSTOMER_MCP_SERVER_URL = os.getenv("CUSTOMER_MCP_SERVER_URL")
 
     if not JUDGE_MODEL:
         logger.error("JUDGE_MODEL environment variable is not set")
@@ -42,7 +43,6 @@ def main():
     if not LLAMA_STACK_BASE_URL:
         logger.error("LLAMA_STACK_BASE_URL environment variable is not set")
         sys.exit(1)
-
 
     # Define the judge prompt template
     # Required variables: {input_query}, {expected_answer}, {generated_answer}
@@ -57,15 +57,18 @@ Provide a score from 1-5 and explain your reasoning."""
     logger.info(f"Connecting to Llama Stack server at: {LLAMA_STACK_BASE_URL}")
     logger.info(f"Registering scoring function: {SCORING_FN_ID}")
     logger.info(f"Using judge model: {JUDGE_MODEL}")
-    logger.info(f"Using candidate model: {INFERENCE_MODEL}")
+    logger.info(f"Using agent model: {INFERENCE_MODEL}")
+    if CUSTOMER_MCP_SERVER_URL:
+        logger.info(f"Customer MCP server URL: {CUSTOMER_MCP_SERVER_URL}")
 
     # Create the Llama Stack client
     client = LlamaStackClient(base_url=LLAMA_STACK_BASE_URL)
 
+    # Register scoring function
     try:
         client.scoring_functions.register(
             scoring_fn_id=SCORING_FN_ID,
-            description="LLM-as-judge scoring function for evaluating response quality",
+            description="LLM-as-judge scoring function for evaluating agent response quality",
             return_type={"type": "string"},
             provider_id="llm-as-judge",
             provider_scoring_fn_id="llm-as-judge-base",
@@ -82,6 +85,7 @@ Provide a score from 1-5 and explain your reasoning."""
         else:
             raise
 
+    # Register benchmark with the agent-evals dataset
     try:
         client.benchmarks.register(
             benchmark_id=BENCHMARK_ID,
@@ -96,15 +100,35 @@ Provide a score from 1-5 and explain your reasoning."""
         else:
             raise
 
+    # Define agent config with customer MCP tools
+    agent_config = {
+        "model": INFERENCE_MODEL,
+        "instructions": "You are a helpful assistant that can search for customer information. Use the available tools to find customer data when asked.",
+        "sampling_params": {
+            "strategy": {
+                "type": "top_p",
+                "temperature": 0.5,
+                "top_p": 0.9,
+            },
+            "max_tokens": 1024,
+        },
+        "toolgroups": [
+            "customer_mcp",
+        ],
+        "tool_choice": "auto",
+        "tool_prompt_format": "json",
+        "input_shields": [],
+        "output_shields": [],
+        "enable_session_persistence": False,
+    }
+
+    # Run evaluation with agent candidate
     job = client.alpha.eval.run_eval(
         benchmark_id=BENCHMARK_ID,
         benchmark_config={
             "eval_candidate": {
-                "type": "model",
-                "model": INFERENCE_MODEL,
-                "sampling_params": {
-                    "max_tokens": 1024,
-                },
+                "type": "agent",
+                "config": agent_config,
             },
             "scoring_params": {},
         },
@@ -114,7 +138,7 @@ Provide a score from 1-5 and explain your reasoning."""
 
     # Format and display results
     print("\n" + "=" * 80)
-    print("EVALUATION RESULTS")
+    print("AGENT EVALUATION RESULTS")
     print("=" * 80)
 
     generations = result.generations
@@ -122,13 +146,19 @@ Provide a score from 1-5 and explain your reasoning."""
 
     for i, gen in enumerate(generations):
         print(f"\n--- Evaluation {i + 1} ---")
+        input_query = gen.get("input_query", "N/A")
+        expected_answer = gen.get("expected_answer", "N/A")
         generated_answer = gen.get("generated_answer", "N/A")
+
         # Truncate long answers for display
         if len(generated_answer) > 200:
             display_answer = generated_answer[:200] + "..."
         else:
             display_answer = generated_answer
-        print(f"Generated Answer: {display_answer}")
+
+        print(f"Question: {input_query}")
+        print(f"Expected: {expected_answer}")
+        print(f"Generated: {display_answer}")
 
         if i < len(score_rows):
             score_row = score_rows[i]

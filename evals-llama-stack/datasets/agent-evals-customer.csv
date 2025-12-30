@@ -1,0 +1,2 @@
+input_query,expected_answer,chat_completion_input
+What company does Thomas Hardy work for?,"Around the Horn","[{""role"": ""user"", ""content"": ""What company does Thomas Hardy work for?""}]"
