@@ -6,7 +6,7 @@ This file created due to the use of Codex CLI
 - `fantaco-customer-main/`: Spring Boot Customer API (Java 21, Maven, PostgreSQL).
 - `fantaco-finance-main/`: Spring Boot Finance API (Java 21, Maven, PostgreSQL).
 - `fantaco-mcp-servers/`: Python MCP servers for customer and finance APIs.
-- `simple-agent-langgraph/`, `customer-agent-llama-stack/`, `finance-agent-llama-stack/`, `basic-rag-llama-stack/`, `shields-llama-stack/`, `evals-llama-stack/`: Llama Stack and LangGraph demos/scripts.
+- `simple-agent-langgraph/`, `customer-agent-llama-stack/`, `finance-agent-llama-stack/`, `rag-llama-stack/`, `shields-llama-stack/`, `evals-llama-stack/`: Llama Stack and LangGraph demos/scripts.
 - `llama-stack-scripts/`: Helper scripts for Llama Stack server operations.
 - `helm/`: Helm charts for deploying apps and agents.
 - `langfuse-setup/`: Langfuse + LangGraph demo assets.

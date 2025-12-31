@@ -84,7 +84,7 @@ except Exception as e:
     sys.exit(1)
 
 # Download clean text file
-url = "https://raw.githubusercontent.com/burrsutter/fantaco-redhat-one-2026/refs/heads/main/basic-rag-llama-stack/source_docs/FantaCoFabulousHRBenefits_clean.txt"
+url = "https://raw.githubusercontent.com/burrsutter/fantaco-redhat-one-2026/refs/heads/main/rag-llama-stack/source_docs/FantaCoFabulousHRBenefits_clean.txt"
 try:
     logger.info(f"Downloading document...")
     response = requests.get(url, timeout=30)
