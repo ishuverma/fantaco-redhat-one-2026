@@ -110,6 +110,7 @@ Provide a score from 1-5 and explain your reasoning."""
         },
     )
     logger.info(f"Eval job started: {job.job_id}")
+    
     result = client.alpha.eval.jobs.retrieve(job_id=job.job_id, benchmark_id=BENCHMARK_ID)
 
     # Format and display results
