@@ -31,13 +31,13 @@ def main():
     BENCHMARK_ID = "my-llm-as-judge-benchmark"
     LLAMA_STACK_BASE_URL = os.getenv("LLAMA_STACK_BASE_URL", "http://localhost:8321")
     JUDGE_MODEL = os.getenv("JUDGE_MODEL")
-    INFERENCE_MODEL = os.getenv("INFERENCE_MODEL")
+    CANDIDATE_MODEL = os.getenv("CANDIDATE_MODEL")
 
     if not JUDGE_MODEL:
         logger.error("JUDGE_MODEL environment variable is not set")
         sys.exit(1)
-    if not INFERENCE_MODEL:
-        logger.error("INFERENCE_MODEL environment variable is not set")
+    if not CANDIDATE_MODEL:
+        logger.error("CANDIDATE_MODEL environment variable is not set")
         sys.exit(1)
     if not LLAMA_STACK_BASE_URL:
         logger.error("LLAMA_STACK_BASE_URL environment variable is not set")
@@ -57,7 +57,7 @@ Provide a score from 1-5 and explain your reasoning."""
     logger.info(f"Connecting to Llama Stack server at: {LLAMA_STACK_BASE_URL}")
     logger.info(f"Registering scoring function: {SCORING_FN_ID}")
     logger.info(f"Using judge model: {JUDGE_MODEL}")
-    logger.info(f"Using candidate model: {INFERENCE_MODEL}")
+    logger.info(f"Using candidate model: {CANDIDATE_MODEL}")
 
     # Create the Llama Stack client
     client = LlamaStackClient(base_url=LLAMA_STACK_BASE_URL)
@@ -101,7 +101,7 @@ Provide a score from 1-5 and explain your reasoning."""
         benchmark_config={
             "eval_candidate": {
                 "type": "model",
-                "model": INFERENCE_MODEL,
+                "model": CANDIDATE_MODEL,
                 "sampling_params": {
                     "max_tokens": 1024,
                 },
