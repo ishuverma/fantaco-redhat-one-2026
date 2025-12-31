@@ -103,14 +103,15 @@ Provide a score from 1-5 and explain your reasoning."""
     # Define agent config with customer MCP tools
     agent_config = {
         "model": INFERENCE_MODEL,
-        "instructions": "You are a helpful assistant that can search for customer information. Use the available tools to find customer data when asked.",
+        "instructions": """You are a helpful assistant that can search for customer information.
+Use the search_customers tool to find customer data when asked.
+After receiving tool results, immediately provide a concise answer to the user's question.
+Do not call the same tool multiple times with the same parameters.""",
         "sampling_params": {
             "strategy": {
-                "type": "top_p",
-                "temperature": 0.5,
-                "top_p": 0.9,
+                "type": "greedy",
             },
-            "max_tokens": 1024,
+            "max_tokens": 2048,
         },
         "toolgroups": [
             "customer_mcp",
@@ -120,6 +121,7 @@ Provide a score from 1-5 and explain your reasoning."""
         "input_shields": [],
         "output_shields": [],
         "enable_session_persistence": False,
+        "max_infer_iters": 3,
     }
 
     # Run evaluation with agent candidate
