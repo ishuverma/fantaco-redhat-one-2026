@@ -122,35 +122,114 @@ podman compose up
 This folder and sub-project include the instructions to run LangFuse on OpenShift and interate an example LangGraph-based agent into the traces capabilities of LangFuse. 
 
 
-### Installation
+### Installation: OpenShift
+
+As the Cluster Admin
 
 ```bash
-kubectl create namespace langfuse
+oc new-project langfuse
 
 helm repo add langfuse https://langfuse.github.io/langfuse-k8s
 helm repo update
 ```
 
 ```bash
-helm install langfuse langfuse/langfuse \
-  --namespace langfuse
+LF_SALT="$(openssl rand -hex 16)"
+LF_NEXTAUTH_SECRET="$(openssl rand -hex 32)"
+PG_PASS="$(openssl rand -hex 16)"
+CH_PASS="$(openssl rand -hex 16)"
+REDIS_PASS="$(openssl rand -hex 16)"
+S3_ROOT_PASS="$(openssl rand -hex 16)"
 ```
 
 ```bash
-oc expose service svc/langfuse-web -n langfluse
+oc -n langfuse create secret generic langfuse-general \
+  --from-literal=salt="$LF_SALT"
+
+oc -n langfuse create secret generic langfuse-nextauth-secret \
+  --from-literal=nextauth-secret="$LF_NEXTAUTH_SECRET"
+
+oc -n langfuse create secret generic langfuse-postgresql-auth \
+  --from-literal=password="$PG_PASS" \
+  --from-literal=postgres-password="$PG_PASS"
+
+oc -n langfuse create secret generic langfuse-clickhouse-auth \
+  --from-literal=password="$CH_PASS"
+
+oc -n langfuse create secret generic langfuse-redis-auth \
+  --from-literal=password="$REDIS_PASS"
+
+oc -n langfuse create secret generic langfuse-s3-auth \
+  --from-literal=rootUser="root" \
+  --from-literal=rootPassword="$S3_ROOT_PASS"
 ```
 
-#### API Key
+```bash
+helm install langfuse langfuse/langfuse -n langfuse -f values-openshift.yaml
+```
+
+```bash
+oc get pods
+```
+
+```
+NAME                               READY   STATUS              RESTARTS   AGE
+langfuse-clickhouse-shard0-0       0/1     ContainerCreating   0          6s
+langfuse-clickhouse-shard0-1       0/1     ContainerCreating   0          6s
+langfuse-clickhouse-shard0-2       0/1     ContainerCreating   0          6s
+langfuse-postgresql-0              0/1     ContainerCreating   0          6s
+langfuse-redis-primary-0           0/1     ContainerCreating   0          6s
+langfuse-s3-5fb6c8f845-7dqz9       0/1     ContainerCreating   0          6s
+langfuse-web-77f5988d59-rqphb      0/1     ContainerCreating   0          6s
+langfuse-worker-74694f948f-c6pg5   0/1     ContainerCreating   0          6s
+langfuse-zookeeper-0               0/1     ContainerCreating   0          6s
+langfuse-zookeeper-1               0/1     Pending             0          6s
+langfuse-zookeeper-2               0/1     ContainerCreating   0          6s
+```
+
+When all pods have started successfully
+
+```bash
+oc expose service langfuse-web -n langfuse
+```
+
+```bash
+export LANGFUSE_URL="http://$(oc get route -l app.kubernetes.io/name=langfuse -o jsonpath='{.items[0].spec.host}')"
+```
+
+You need to update the values-openshift.yaml
+
+```
+  langfuse:
+    nextauth:
+      url: "http://<YOUR-ROUTE-URL>"
+```
+
+```bash
+helm upgrade langfuse langfuse/langfuse -n langfuse -f values-openshift.yaml
+```
+
+```bash
+oc rollout restart deployment langfuse-web -n langfuse
+```
+
+
+```bash
+open $LANGFUSE_URL
+```
+
+### API Key
 
 In the Langfuse UI:
-	1.	Create Organization
-	2.	Create Project
-	3.	Go to: Project -> Settings -> API Keys
+  1.  Create a new Account
+	2.	Create Organization
+	3.	Create Project
+	4.	Go to: Project -> Settings -> API Keys
 
 See [screenshots.md](screenshots.md)
 
 
-### Postgres
+### Postgres Setup for FantaCo
 
 ```bash
 psql -h localhost -p 5432 -U postgres -d postgres

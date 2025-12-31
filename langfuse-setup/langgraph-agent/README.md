@@ -7,9 +7,9 @@ A simple teaching demo showing how to integrate LangGraph agents with Langfuse o
 ### Prerequisites
 
 - Python 3.12+
-- Node.js 18+
 - OpenAI API key (or vLLM endpoint)
 - Langfuse account and API keys
+- Any modern web browser
 
 ### 1. Setup Backend
 
@@ -18,7 +18,7 @@ cd backend
 
 # Create virtual environment
 python3.12 -m venv .venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source .venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -108,20 +108,21 @@ http://localhost:3000/trace/{trace_id}
 
 ### 2. Setup Frontend
 
+The frontend is now a single HTML file with **no build step required**!
+
+**Option 1: Open directly in browser**
 ```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Create .env file (optional - defaults to localhost:8002)
-cp .env.example .env
-
-# Run the development server
-npm run dev
+open frontend/index.html
 ```
 
-The frontend will start on `http://localhost:3002`
+**Option 2: Serve with Python's built-in HTTP server**
+```bash
+cd frontend
+python3 -m http.server 3002
+```
+Then open `http://localhost:3002` in your browser.
+
+**No Node.js or npm required!** The frontend uses vanilla JavaScript with Tailwind CSS from CDN.
 
 ### 3. Test the Application
 
@@ -146,15 +147,7 @@ When you send messages, Langfuse will capture:
 │   ├── requirements.txt     # Python dependencies
 │   └── .env.example        # Environment variables template
 ├── frontend/
-│   ├── src/
-│   │   ├── App.jsx         # React chat interface
-│   │   ├── main.jsx        # Entry point
-│   │   └── index.css       # Tailwind styles
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── .env.example
+│   └── index.html          # Single-file vanilla JS chat interface (no build needed!)
 ├── SPEC.md                  # Full technical specification
 └── README.md               # This file
 ```

@@ -1,0 +1,34 @@
+langfuse:
+  salt:
+    secretKeyRef:
+      name: langfuse-general
+      key: salt
+  nextauth:
+    url: "http://langfuse-web-langfuse.apps.cluster-2qn7j.dynamic.redhatworkshops.io"
+    secret:
+      secretKeyRef:
+        name: langfuse-nextauth-secret
+        key: nextauth-secret
+
+postgresql:
+  auth:
+    username: langfuse
+    existingSecret: langfuse-postgresql-auth
+    secretKeys:
+      userPasswordKey: password
+
+clickhouse:
+  auth:
+    existingSecret: langfuse-clickhouse-auth
+    existingSecretKey: password
+
+redis:
+  auth:
+    existingSecret: langfuse-redis-auth
+    existingSecretPasswordKey: password
+
+s3:
+  auth:
+    existingSecret: langfuse-s3-auth
+    rootUserSecretKey: rootUser
+    rootPasswordSecretKey: rootPassword

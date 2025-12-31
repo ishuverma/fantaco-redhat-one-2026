@@ -1,12 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LangGraph + Langfuse Demo</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-0.5rem); }
+        }
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    LangGraph + Langfuse Demo
+                </h1>
+                <p class="text-sm text-gray-600 mt-1">
+                    Session ID: <code id="session-id" class="bg-gray-100 px-2 py-1 rounded text-xs"></code>
+                </p>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        <main class="flex-1 overflow-y-auto">
+            <div class="max-w-4xl mx-auto px-4 py-6 space-y-4">
+                <div id="messages-container" class="space-y-4">
+                    <!-- Welcome message -->
+                    <div id="welcome-message" class="text-center text-gray-500 py-12">
+                        <p class="text-lg">Send a message to start chatting!</p>
+                        <p class="text-sm mt-2">All interactions are traced in Langfuse</p>
+                    </div>
+                </div>
+                <div id="messages-end"></div>
+            </div>
+        </main>
+
+        <!-- Input -->
+        <footer class="bg-white border-t shadow-lg">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+                <form id="chat-form" class="flex gap-2">
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Type your message..."
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    />
+                    <button
+                        type="submit"
+                        id="send-button"
+                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                    >
+                        Send
+                    </button>
+                </form>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:8002'
+            : `${window.location.origin}`;
+
+        // Generate session ID
+        const sessionId = crypto.randomUUID();
+        document.getElementById('session-id').textContent = sessionId;
+
+        // DOM elements
+        const messagesContainer = document.getElementById('messages-container');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatForm = document.getElementById('chat-form');
+        const messagesEnd = document.getElementById('messages-end');
+
+        let isLoading = false;
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            messagesEnd.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Create message element
+        function createMessageElement(role, content, timestamp) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `max-w-[80%] rounded-lg px-4 py-3 ${
+                role === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : role === 'error'
+                    ? 'bg-red-100 text-red-800 border border-red-300'
+                    : 'bg-white border border-gray-200 text-gray-900'
+            }`;
+
+            const contentP = document.createElement('p');
+            contentP.className = 'whitespace-pre-wrap';
+            contentP.textContent = content;
+
+            const timeP = document.createElement('p');
+            timeP.className = 'text-xs opacity-70 mt-2';
+            timeP.textContent = new Date(timestamp).toLocaleTimeString();
+
+            messageDiv.appendChild(contentP);
+            messageDiv.appendChild(timeP);
+            messageWrapper.appendChild(messageDiv);
+
+            return messageWrapper;
+        }
+
+        // Create loading indicator
+        function createLoadingElement() {
+            const loadingWrapper = document.createElement('div');
+            loadingWrapper.id = 'loading-indicator';
+            loadingWrapper.className = 'flex justify-start';
+
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'bg-white border border-gray-200 rounded-lg px-4 py-3';
+
+            const dotsContainer = document.createElement('div');
+            dotsContainer.className = 'flex space-x-2';
+
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 bg-gray-400 rounded-full animate-bounce ${i === 1 ? 'delay-100' : i === 2 ? 'delay-200' : ''}`;
+                dotsContainer.appendChild(dot);
+            }
+
+            loadingDiv.appendChild(dotsContainer);
+            loadingWrapper.appendChild(loadingDiv);
+
+            return loadingWrapper;
+        }
+
+        // Add message to UI
+        function addMessage(role, content, timestamp = new Date()) {
+            // Hide welcome message if visible
+            if (welcomeMessage) {
+                welcomeMessage.style.display = 'none';
+            }
+
+            const messageElement = createMessageElement(role, content, timestamp);
+            messagesContainer.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+        // Show/hide loading
+        function setLoading(loading) {
+            isLoading = loading;
+            messageInput.disabled = loading;
+            sendButton.disabled = loading;
+
+            if (loading) {
+                const loadingElement = createLoadingElement();
+                messagesContainer.appendChild(loadingElement);
+                scrollToBottom();
+            } else {
+                const loadingElement = document.getElementById('loading-indicator');
+                if (loadingElement) {
+                    loadingElement.remove();
+                }
+            }
+        }
+
+        // Send message to backend
+        async function sendMessage(message) {
+            if (!message.trim() || isLoading) return;
+
+            // Add user message to UI
+            addMessage('user', message);
+
+            // Clear input
+            messageInput.value = '';
+
+            // Show loading
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId,
+                        user_id: 'demo-user',
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Add AI response to UI
+                addMessage('assistant', data.reply);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('error', 'Failed to get response. Check console and backend logs.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Form submit handler
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = messageInput.value;
+            sendMessage(message);
+        });
+
+        // Enable send button only when input has text
+        messageInput.addEventListener('input', () => {
+            sendButton.disabled = !messageInput.value.trim() || isLoading;
+        });
+
+        // Initial state
+        sendButton.disabled = true;
+
+        console.log('API_URL:', API_URL);
+        console.log('Session ID:', sessionId);
+    </script>
+</body>
 </html>
