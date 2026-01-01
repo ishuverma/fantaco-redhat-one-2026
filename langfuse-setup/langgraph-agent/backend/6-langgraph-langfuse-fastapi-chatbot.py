@@ -7,7 +7,9 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import pathlib
 
 from langgraph.graph import StateGraph, END
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -262,9 +264,27 @@ Be concise and helpful.""")
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Serve the frontend HTML"""
+    # Get the path to the frontend HTML file
+    frontend_path = pathlib.Path(__file__).parent.parent / "frontend" / "index.html"
+    if frontend_path.exists():
+        return FileResponse(frontend_path)
+    else:
+        # Fallback to API info if frontend not found
+        return {
+            "message": "LangGraph MCP Customer and Finance Service API",
+            "version": "1.0.0",
+            "status": "running",
+            "available_tools": [t.name for t in all_tools],
+            "note": "Frontend not found. Access /api for API info."
+        }
+
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
     return {
-        "message": "LangGraph MCP Customer and FinanceService API",
+        "message": "LangGraph MCP Customer and Finance Service API",
         "version": "1.0.0",
         "status": "running",
         "available_tools": [t.name for t in all_tools]

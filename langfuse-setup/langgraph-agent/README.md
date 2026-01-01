@@ -11,7 +11,7 @@ A simple teaching demo showing how to integrate LangGraph agents with Langfuse o
 - Langfuse account and API keys
 - Any modern web browser
 
-### 1. Setup Backend
+### 1. Setup and Run
 
 ```bash
 cd backend
@@ -33,32 +33,32 @@ cp .env.example .env
 # - LANGFUSE_BASE_URL (default: https://cloud.langfuse.com)
 
 # Run the server
-python 6-langgraph-langfuse-fastapi.py
+python 6-langgraph-langfuse-fastapi-chatbot.py
 ```
 
-The backend will start on `http://localhost:8002`
+The server will start on `http://localhost:8002` and serve both the API and web UI.
 
 
 #### Test Backend
 
 ```bash
-curl -X POST http://localhost:8002/api/v1/chat \
--H "Content-Type: application/json" \
--d '{
+curl -X POST http://localhost:8002/chat \
+  -H "Content-Type: application/json" \
+  -d '{
     "message": "who does Thomas Hardy work for?",
     "user_id": "test-user",
     "session_id": "test-session-123"
 }'
 ```
 
-#### Test Standalone FastAPI Server (6-langgraph-langfuse-fastapi.py)
+#### Test Standalone FastAPI Server (6-langgraph-langfuse-fastapi-chatbot.py)
 
 The backend also includes a standalone FastAPI server that integrates with MCP servers:
 
 **Start the server:**
 ```bash
 cd backend
-python 6-langgraph-langfuse-fastapi.py
+python 6-langgraph-langfuse-fastapi-chatbot.py
 ```
 
 **Health Check:**
@@ -106,29 +106,24 @@ The `trace_id` can be used to view the full trace in Langfuse at:
 http://localhost:3000/trace/{trace_id}
 ```
 
-### 2. Setup Frontend
+### 2. Access the Application
 
-The frontend is now a single HTML file with **no build step required**!
+Once the backend is running, open your browser and go to:
 
-**Option 1: Open directly in browser**
-```bash
-open frontend/index.html
+```
+http://localhost:8002
 ```
 
-**Option 2: Serve with Python's built-in HTTP server**
-```bash
-cd frontend
-python3 -m http.server 3002
-```
-Then open `http://localhost:3002` in your browser.
+The chat interface will load automatically!
 
-**No Node.js or npm required!** The frontend uses vanilla JavaScript with Tailwind CSS from CDN.
+**That's it!** The backend serves both the API and the web interface. No separate frontend server needed.
 
 ### 3. Test the Application
 
-1. Open `http://localhost:3002` in your browser
-2. Send a message in the chat
+1. Open `http://localhost:8002` in your browser
+2. Send a message like "Who is Thomas Hardy?"
 3. Check your Langfuse dashboard to see the trace!
+4. Click on the trace ID in Langfuse to view detailed execution
 
 ## What You'll See in Langfuse
 
@@ -143,13 +138,28 @@ When you send messages, Langfuse will capture:
 ```
 .
 ├── backend/
-│   ├── 6-langgraph-langfuse-fastapi.py   # FastAPI app with LangGraph agent
+│   ├── 6-langgraph-langfuse-fastapi.py   # FastAPI app serving API + web UI
 │   ├── requirements.txt     # Python dependencies
 │   └── .env.example        # Environment variables template
 ├── frontend/
-│   └── index.html          # Single-file vanilla JS chat interface (no build needed!)
+│   └── index.html          # Single-file vanilla JS chat interface
 ├── SPEC.md                  # Full technical specification
 └── README.md               # This file
+```
+
+## Architecture
+
+The application is now a **single Python process**:
+- FastAPI backend handles chat requests via `/chat` endpoint
+- Frontend HTML is served from root `/`
+- Both run on `http://localhost:8002`
+- No separate frontend server needed
+- No Node.js or npm dependencies
+
+**Alternative:** You can still run the frontend standalone if needed:
+```bash
+cd frontend
+python3 -m http.server 3002  # Opens on http://localhost:3002
 ```
 
 ## Chat Interface

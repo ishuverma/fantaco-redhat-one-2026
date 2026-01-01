@@ -169,7 +169,7 @@ helm install langfuse langfuse/langfuse -n langfuse -f values-openshift.yaml
 ```
 
 ```bash
-oc get pods
+oc get pods -n langfuse
 ```
 
 ```
@@ -195,6 +195,7 @@ oc expose service langfuse-web -n langfuse
 
 ```bash
 export LANGFUSE_URL="http://$(oc get route -l app.kubernetes.io/name=langfuse -o jsonpath='{.items[0].spec.host}')"
+echo $LANGFUSE_URL
 ```
 
 You need to update the values-openshift.yaml
