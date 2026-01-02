@@ -21,6 +21,16 @@ clickhouse:
   auth:
     existingSecret: langfuse-clickhouse-auth
     existingSecretKey: password
+  # Allow nondeterministic mutations for trace deletion
+  usersdFiles:
+    allow_mutations.xml: |
+      <clickhouse>
+        <profiles>
+          <default>
+            <allow_nondeterministic_mutations>1</allow_nondeterministic_mutations>
+          </default>
+        </profiles>
+      </clickhouse>
 
 redis:
   auth:

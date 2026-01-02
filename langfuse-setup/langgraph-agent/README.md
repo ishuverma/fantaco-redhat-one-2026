@@ -95,6 +95,9 @@ curl -X POST http://localhost:8002/chat \
   -d '{"message": "Find orders for Lonesome Pine Restaurant", "session_id": "demo-session"}'
 ```
 
+### Troubleshooting trace deletions
+
+see *fix-clickhouse-mutations.sh*, it should be set correctly in *values-openshift.yaml* now.  The default OOTB helm chart had clickhouse unable to handle trace deletions from within Langfuse. 
 
 
 ### Access the Application

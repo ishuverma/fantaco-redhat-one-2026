@@ -97,13 +97,6 @@ curl -s -X POST http://localhost:8002/chat \
 Get customer information and their orders:
 
 ```bash
-curl -X POST http://localhost:8002/chat \
-  -H "Content-Type: application/json" \
-  -d "{\"message\": \"What are the orders for Thomas Hardy?\", \"session_id\": \"session-456\", \"user_id\": \"admin\"}"
-```
-
-**Alternative with single quotes (easier):**
-```bash
 curl -s -X POST http://localhost:8002/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "What are the orders for Thomas Hardy?", "session_id": "session-456"}' \
