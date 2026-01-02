@@ -15,9 +15,12 @@ load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Suppress noisy httpx logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 BASE_URL = os.getenv("LLAMA_STACK_BASE_URL")
 INFERENCE_MODEL = os.getenv("INFERENCE_MODEL")

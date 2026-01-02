@@ -106,7 +106,7 @@ See [screenshots.md](screenshots.md) for detailed UI screenshots.
 Create a `.env` with:
 *LANGFUSE_SECRET_KEY*
 *LANGFUSE_PUBLIC_KEY*
-*LANGFUSE_BASE_URL*
+*LANGFUSE_HOST*
 
 
 

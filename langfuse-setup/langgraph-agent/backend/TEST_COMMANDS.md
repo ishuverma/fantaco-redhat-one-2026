@@ -301,6 +301,6 @@ Save as `test_api.sh`, make executable with `chmod +x test_api.sh`, and run with
 
 1. **Port**: Default port is 8002. Change via `PORT` environment variable.
 2. **MCP Servers**: Must be running before starting FastAPI server.
-3. **Langfuse**: Traces are sent to the URL specified in `LANGFUSE_BASE_URL`.
+3. **Langfuse**: Traces are sent to the URL specified in `LANGFUSE_HOST`.
 4. **Session Tracking**: Use consistent `session_id` for conversation continuity in Langfuse.
 5. **User Tracking**: The `user_id` field helps track usage per user in Langfuse analytics.
