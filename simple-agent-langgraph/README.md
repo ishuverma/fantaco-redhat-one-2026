@@ -55,6 +55,7 @@ python 8_langgraph_client_list_invoices_any_customer.py thomashardy@example.com
 ## Fast API Backend
 
 ```bash
+cd langgraph-fastapi
 python 9_langgraph_fastapi.py
 ```
 
