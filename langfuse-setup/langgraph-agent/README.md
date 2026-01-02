@@ -290,7 +290,7 @@ curl -X POST http://localhost:8002/feedback \
 Get a report of all user feedback:
 
 ```bash
-curl http://localhost:8002/feedback-report
+curl http://localhost:8002/feedback-report | jq
 ```
 
 **Response:**

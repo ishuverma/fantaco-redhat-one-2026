@@ -4,7 +4,7 @@ langfuse:
       name: langfuse-general
       key: salt
   nextauth:
-    url: "http://langfuse-web-langfuse.apps.cluster-2qn7j.dynamic.redhatworkshops.io"
+    url: "PLACEHOLDER_URL"
     secret:
       secretKeyRef:
         name: langfuse-nextauth-secret
