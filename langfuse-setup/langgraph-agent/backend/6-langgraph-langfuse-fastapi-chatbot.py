@@ -31,6 +31,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Log environment variables at startup
+def log_env_variables():
+    """Log all expected environment variables and their current values."""
+    env_vars = {
+        # LLM Configuration
+        "API_KEY": os.getenv("API_KEY", "NOT SET"),
+        "INFERENCE_MODEL": os.getenv("INFERENCE_MODEL", "NOT SET"),
+        "BASE_URL": os.getenv("BASE_URL", "NOT SET"),
+        # Langfuse Configuration
+        "LANGFUSE_SECRET_KEY": os.getenv("LANGFUSE_SECRET_KEY", "NOT SET")[:20] + "..." if os.getenv("LANGFUSE_SECRET_KEY") else "NOT SET",
+        "LANGFUSE_PUBLIC_KEY": os.getenv("LANGFUSE_PUBLIC_KEY", "NOT SET"),
+        "LANGFUSE_HOST": os.getenv("LANGFUSE_HOST", "NOT SET"),
+        # MCP Server Configuration
+        "CUSTOMER_MCP_SERVER_URL": os.getenv("CUSTOMER_MCP_SERVER_URL", "NOT SET"),
+        "FINANCE_MCP_SERVER_URL": os.getenv("FINANCE_MCP_SERVER_URL", "NOT SET"),
+        # Application Configuration
+        "PORT": os.getenv("PORT", "NOT SET"),
+    }
+
+    logger.info("=" * 60)
+    logger.info("ENVIRONMENT VARIABLES:")
+    logger.info("=" * 60)
+    for key, value in env_vars.items():
+        logger.info(f"  {key}: {value}")
+    logger.info("=" * 60)
+
+log_env_variables()
 
 # Pydantic models for API
 class ChatRequest(BaseModel):
