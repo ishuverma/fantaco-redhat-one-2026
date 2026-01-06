@@ -110,20 +110,6 @@ except Exception as e:
     logger.error(f"Unexpected error downloading file: {e}")
     sys.exit(1)
 
-# Save the text to source_docs folder for inspection
-try:
-    source_docs_path = os.path.join(os.path.dirname(__file__), "source_docs", "FantaCoFabulousHRBenefits_clean.txt")
-    os.makedirs(os.path.dirname(source_docs_path), exist_ok=True)
-    with open(source_docs_path, 'w', encoding='utf-8') as f:
-        f.write(text_content)
-    logger.info(f"✓ Saved to: {source_docs_path}")
-except IOError as e:
-    logger.error(f"Failed to save file: {e}")
-    logger.warning("Continuing with upload (file not saved locally)")
-except Exception as e:
-    logger.error(f"Unexpected error saving file: {e}")
-    logger.warning("Continuing with upload (file not saved locally)")
-
 # Upload as text file
 try:
     logger.info("Uploading document to Llama Stack...")
