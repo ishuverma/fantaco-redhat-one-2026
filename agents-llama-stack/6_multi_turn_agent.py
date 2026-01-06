@@ -12,7 +12,7 @@ load_dotenv()
 
 # Get configuration from environment
 LLAMA_STACK_BASE_URL = os.getenv("LLAMA_STACK_BASE_URL", "http://localhost:8321")
-INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "vllm/qwen3-14b-gaudi")
+INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "vllm/qwen3-14b")
 CUSTOMER_MCP_SERVER_URL = os.getenv("CUSTOMER_MCP_SERVER_URL")
 FINANCE_MCP_SERVER_URL = os.getenv("FINANCE_MCP_SERVER_URL")
 
