@@ -72,6 +72,34 @@ curl -sS -G "http://localhost:8000/question" --data-urlencode "q=fetch orders fo
 
 ```
 
+### Load Testing
+
+Use `load_test.py` to run concurrent load tests against the API:
+
+```bash
+cd langgraph-fastapi
+
+# Run with defaults (3 concurrent requests)
+python load_test.py
+
+# Sequential mode
+python load_test.py --sequential
+
+# Custom concurrency and iterations
+python load_test.py -c 6 -n 3
+
+# Enable debug logging to see actual responses
+python load_test.py --debug
+```
+
+**Options:**
+- `--url` - Base URL (default: `http://$SERVICE_URL:8000`, SERVICE_URL defaults to `langgraph-fastapi`)
+- `-c, --concurrent` - Number of concurrent workers (default: 3)
+- `-n, --iterations` - Run all queries N times (default: 1)
+- `-s, --sequential` - Run requests one at a time
+- `-v, --verbose` - Show full response content in summary
+- `-d, --debug` - Enable debug logging to see actual responses
+
 ## Frontend 
 
 See [simple-agent-chat-ui](./simple-agent-chat-ui/README.md)
