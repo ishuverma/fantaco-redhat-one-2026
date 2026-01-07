@@ -13,7 +13,7 @@ from urllib.parse import urlencode
 
 # Default configuration
 SERVICE_URL = os.getenv("SERVICE_URL", "langgraph-fastapi")
-DEFAULT_BASE_URL = f"http://{SERVICE_URL}:8001"
+DEFAULT_BASE_URL = f"http://{SERVICE_URL}:8000"
 DEFAULT_CONCURRENT_USERS = 3
 DEFAULT_ITERATIONS = 1
 
@@ -169,6 +169,7 @@ def main():
     print("=" * 60)
     print("LOAD TEST - FastAPI LangGraph API")
     print("=" * 60)
+    print(f"SERVICE_URL env:    {SERVICE_URL}")
     print(f"Target URL:         {args.url}")
     print(f"Total queries:      {len(all_queries)}")
     print(f"Iterations:         {args.iterations}")
