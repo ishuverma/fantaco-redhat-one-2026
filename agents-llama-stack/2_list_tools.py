@@ -9,11 +9,9 @@ load_dotenv()
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 BASE_URL = os.getenv("LLAMA_STACK_BASE_URL")
-API_KEY = os.getenv("LLAMA_STACK_API_KEY")
 
 client = Client(
     base_url=BASE_URL,
-    api_key=API_KEY
 )
 
 
