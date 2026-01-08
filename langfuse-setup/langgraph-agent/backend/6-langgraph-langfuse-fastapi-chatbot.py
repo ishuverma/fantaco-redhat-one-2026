@@ -220,10 +220,13 @@ app.add_middleware(
 async def process_chat(message: str, session_id: Optional[str] = None, user_id: Optional[str] = None) -> tuple[str, Optional[str]]:
     """Process a chat message and return the response with trace ID"""
 
-    # Initialize Langfuse CallbackHandler (uses LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST env vars)
-    langfuse_handler = CallbackHandler()
-
     logger.info(f"Processing message: {message[:50]}... (Session: {session_id}, User: {user_id})")
+
+    # Get the global Langfuse client
+    langfuse = get_client()
+
+    # Initialize Langfuse CallbackHandler
+    langfuse_handler = CallbackHandler()
 
     # Initialize LLM with tools and Langfuse callback
     llm = ChatOpenAI(
@@ -320,7 +323,7 @@ async def process_chat(message: str, session_id: Optional[str] = None, user_id: 
 
     graph = workflow.compile()
 
-    # Run the workflow
+    # Run the workflow wrapped in a Langfuse span for proper tracing
     system_message = SystemMessage(content="""You are a helpful customer service assistant with access to customer and order information.
 
 Available tools:
@@ -336,29 +339,43 @@ When a user asks about a customer:
 
 Be concise and helpful.""")
 
-    result = await graph.ainvoke(
-        {
-            "messages": [
-                system_message,
-                HumanMessage(content=message)
-            ]
-        },
-        config={"callbacks": [langfuse_handler]}
-    )
+    # Use span context to ensure trace is properly created and captured
+    with langfuse.start_as_current_span(name="customer-service-chat") as span:
+        # Update trace with metadata
+        span.update_trace(
+            user_id=user_id,
+            session_id=session_id,
+            input={"message": message}
+        )
 
-    # Extract final response
-    final_response = ""
-    if result.get("messages"):
-        # Find the last AI message
-        for msg in reversed(result["messages"]):
-            if isinstance(msg, AIMessage) and msg.content:
-                final_response = msg.content
-                break
+        result = await graph.ainvoke(
+            {
+                "messages": [
+                    system_message,
+                    HumanMessage(content=message)
+                ]
+            },
+            config={"callbacks": [langfuse_handler]}
+        )
 
-    # Flush the CallbackHandler to ensure all trace data is sent
-    langfuse_handler.flush()
+        # Extract final response
+        final_response = ""
+        if result.get("messages"):
+            # Find the last AI message
+            for msg in reversed(result["messages"]):
+                if isinstance(msg, AIMessage) and msg.content:
+                    final_response = msg.content
+                    break
 
-    trace_id = langfuse_handler.get_trace_id()
+        # Update trace with output
+        span.update_trace(output={"response": final_response})
+
+        # Get trace ID from the span
+        trace_id = span.trace_id
+
+    # Flush Langfuse to ensure all trace data is sent
+    langfuse.flush()
+
     if trace_id:
         logger.info(f"Request processed. Trace ID: {trace_id}")
         logger.info(f"View trace at: {LANGFUSE_HOST}/project/*/traces/{trace_id}")
