@@ -19,10 +19,14 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langfuse.langchain import CallbackHandler
-from langfuse import get_client
+from langfuse import Langfuse, get_client
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Langfuse with debug mode to troubleshoot trace issues
+_langfuse_client = Langfuse(debug=True)
+print(f"[Langfuse] Initialized with base_url: {_langfuse_client._base_url}")
 
 # Configuration - load environment variables once
 API_KEY = os.getenv("API_KEY", "not-needed")
