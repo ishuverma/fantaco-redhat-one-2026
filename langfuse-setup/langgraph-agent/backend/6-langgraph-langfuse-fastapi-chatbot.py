@@ -24,6 +24,17 @@ from langfuse import get_client
 # Load environment variables
 load_dotenv()
 
+# Configuration - load environment variables once
+API_KEY = os.getenv("API_KEY", "not-needed")
+INFERENCE_MODEL = os.getenv("INFERENCE_MODEL", "qwen3:14b-q8_0")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8321/v1")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")
+CUSTOMER_MCP_SERVER_URL = os.getenv("CUSTOMER_MCP_SERVER_URL", "http://localhost:9001/mcp")
+FINANCE_MCP_SERVER_URL = os.getenv("FINANCE_MCP_SERVER_URL", "http://localhost:9002/mcp")
+PORT = int(os.getenv("PORT", "8002"))
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -34,27 +45,18 @@ logger = logging.getLogger(__name__)
 # Log environment variables at startup
 def log_env_variables():
     """Log all expected environment variables and their current values."""
-    env_vars = {
-        # LLM Configuration
-        "API_KEY": os.getenv("API_KEY", "NOT SET"),
-        "INFERENCE_MODEL": os.getenv("INFERENCE_MODEL", "NOT SET"),
-        "BASE_URL": os.getenv("BASE_URL", "NOT SET"),
-        # Langfuse Configuration
-        "LANGFUSE_SECRET_KEY": os.getenv("LANGFUSE_SECRET_KEY", "NOT SET")[:20] + "..." if os.getenv("LANGFUSE_SECRET_KEY") else "NOT SET",
-        "LANGFUSE_PUBLIC_KEY": os.getenv("LANGFUSE_PUBLIC_KEY", "NOT SET"),
-        "LANGFUSE_HOST": os.getenv("LANGFUSE_HOST", "NOT SET"),
-        # MCP Server Configuration
-        "CUSTOMER_MCP_SERVER_URL": os.getenv("CUSTOMER_MCP_SERVER_URL", "NOT SET"),
-        "FINANCE_MCP_SERVER_URL": os.getenv("FINANCE_MCP_SERVER_URL", "NOT SET"),
-        # Application Configuration
-        "PORT": os.getenv("PORT", "NOT SET"),
-    }
-
     logger.info("=" * 60)
     logger.info("ENVIRONMENT VARIABLES:")
     logger.info("=" * 60)
-    for key, value in env_vars.items():
-        logger.info(f"  {key}: {value}")
+    logger.info(f"  API_KEY: {API_KEY[:10]}..." if API_KEY else "  API_KEY: NOT SET")
+    logger.info(f"  INFERENCE_MODEL: {INFERENCE_MODEL}")
+    logger.info(f"  BASE_URL: {BASE_URL}")
+    logger.info(f"  LANGFUSE_SECRET_KEY: {LANGFUSE_SECRET_KEY[:20]}..." if LANGFUSE_SECRET_KEY else "  LANGFUSE_SECRET_KEY: NOT SET")
+    logger.info(f"  LANGFUSE_PUBLIC_KEY: {LANGFUSE_PUBLIC_KEY}" if LANGFUSE_PUBLIC_KEY else "  LANGFUSE_PUBLIC_KEY: NOT SET")
+    logger.info(f"  LANGFUSE_HOST: {LANGFUSE_HOST}" if LANGFUSE_HOST else "  LANGFUSE_HOST: NOT SET")
+    logger.info(f"  CUSTOMER_MCP_SERVER_URL: {CUSTOMER_MCP_SERVER_URL}")
+    logger.info(f"  FINANCE_MCP_SERVER_URL: {FINANCE_MCP_SERVER_URL}")
+    logger.info(f"  PORT: {PORT}")
     logger.info("=" * 60)
 
 log_env_variables()
@@ -164,7 +166,7 @@ async def lifespan(app: FastAPI):
         {
             "customer_mcp": {
                 "transport": "http",
-                "url": os.getenv("CUSTOMER_MCP_SERVER_URL", "http://localhost:9001/mcp"),
+                "url": CUSTOMER_MCP_SERVER_URL,
             }
         }
     )
@@ -173,7 +175,7 @@ async def lifespan(app: FastAPI):
         {
             "finance_mcp": {
                 "transport": "http",
-                "url": os.getenv("FINANCE_MCP_SERVER_URL", "http://localhost:9002/mcp"),
+                "url": FINANCE_MCP_SERVER_URL,
             }
         }
     )
@@ -225,9 +227,9 @@ async def process_chat(message: str, session_id: Optional[str] = None, user_id: 
 
     # Initialize LLM with tools and Langfuse callback
     llm = ChatOpenAI(
-        model=os.getenv("INFERENCE_MODEL", "qwen3:14b-q8_0"),
-        base_url=os.getenv("BASE_URL", "http://localhost:11434/v1"),
-        api_key=os.getenv("API_KEY", "not-needed"),
+        model=INFERENCE_MODEL,
+        base_url=BASE_URL,
+        api_key=API_KEY,
         temperature=0.7,
         callbacks=[langfuse_handler]
     )
@@ -354,10 +356,15 @@ Be concise and helpful.""")
                 break
 
     # Flush Langfuse to ensure all data is sent
-    get_client().flush()
+    langfuse_client = get_client()
+    langfuse_client.flush()
 
     trace_id = langfuse_handler.last_trace_id
-    logger.info(f"Request processed. Trace ID: {trace_id}")
+    if trace_id:
+        logger.info(f"Request processed. Trace ID: {trace_id}")
+        logger.info(f"View trace at: {LANGFUSE_HOST}/project/*/traces/{trace_id}")
+    else:
+        logger.warning("No trace ID generated - check Langfuse configuration")
 
     return final_response, trace_id
 
@@ -619,7 +626,7 @@ async def get_feedback_report(limit: int = 100):
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.getenv("PORT", 8002))
+    port = PORT
 
     logger.info(f"Starting FastAPI server on port {port}...")
 
