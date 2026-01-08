@@ -19,30 +19,11 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langfuse.langchain import CallbackHandler
-from langfuse import Langfuse, get_client
+from langfuse import get_client
 
 # Load environment variables from the same directory as this script
-import pathlib
-_script_dir = pathlib.Path(__file__).parent
-_env_path = _script_dir / ".env"
+_env_path = pathlib.Path(__file__).parent / ".env"
 load_dotenv(_env_path)
-print(f"[Config] Loaded .env from: {_env_path}")
-print(f"[Config] LANGFUSE_HOST={os.getenv('LANGFUSE_HOST')}")
-
-# Initialize Langfuse with explicit credentials to ensure correct configuration
-_langfuse_public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
-_langfuse_secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-_langfuse_host = os.getenv("LANGFUSE_HOST")
-print(f"[Config] PUBLIC_KEY={_langfuse_public_key}")
-print(f"[Config] SECRET_KEY={_langfuse_secret_key[:20]}..." if _langfuse_secret_key else "[Config] SECRET_KEY=None")
-
-_langfuse_client = Langfuse(
-    public_key=_langfuse_public_key,
-    secret_key=_langfuse_secret_key,
-    host=_langfuse_host,
-    debug=True
-)
-print(f"[Langfuse] Initialized with base_url: {_langfuse_client._base_url}")
 
 # Configuration - load environment variables once
 API_KEY = os.getenv("API_KEY", "not-needed")
