@@ -1,17 +1,42 @@
 #!/bin/bash
-# Reset/clear all traces from Langfuse
-# Usage: ./reset-langfuse-traces.sh [namespace]
-# Default namespace: langfuse
+# Reset/clear all traces from Langfuse using the Langfuse API
+# Usage: ./reset-langfuse-traces.sh
 #
-# WARNING: This will DELETE ALL traces, observations, and scores from Langfuse!
+# Reads credentials from ./langgraph-agent/backend/.env:
+#   LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
+#
+# WARNING: This will DELETE ALL traces from Langfuse!
 
 set -e
 
-NAMESPACE="${1:-langfuse}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/langgraph-agent/backend/.env"
+
+# Load environment variables from .env file
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Error: .env file not found at $ENV_FILE"
+    exit 1
+fi
+
+# Source the .env file (handles KEY=value format)
+set -a
+source "$ENV_FILE"
+set +a
+
+# Validate required variables
+if [ -z "$LANGFUSE_HOST" ]; then
+    echo "Error: LANGFUSE_HOST not set in $ENV_FILE"
+    exit 1
+fi
+
+if [ -z "$LANGFUSE_PUBLIC_KEY" ] || [ -z "$LANGFUSE_SECRET_KEY" ]; then
+    echo "Error: LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY must be set in $ENV_FILE"
+    exit 1
+fi
 
 echo "============================================================"
 echo "WARNING: This will DELETE ALL traces from Langfuse!"
-echo "Namespace: $NAMESPACE"
+echo "Langfuse Host: $LANGFUSE_HOST"
 echo "============================================================"
 read -p "Are you sure you want to continue? (yes/no): " CONFIRM
 
@@ -20,55 +45,101 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 1
 fi
 
-# Get ClickHouse password
-echo "Getting ClickHouse credentials..."
-CH_PASSWORD=$(oc get secret langfuse-clickhouse-auth -n "$NAMESPACE" -o jsonpath='{.data.password}' | base64 -d)
+# Create basic auth header
+AUTH=$(echo -n "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" | base64)
 
-if [ -z "$CH_PASSWORD" ]; then
-    echo "Error: Could not retrieve ClickHouse password"
-    exit 1
-fi
+echo "Fetching traces from Langfuse API..."
 
-echo "Clearing ClickHouse tables..."
+# Counter for deleted traces
+DELETED=0
+ITERATIONS=0
+MAX_ITERATIONS=5
+LIMIT=100
 
-# Delete from ClickHouse tables
-TABLES=("traces" "observations" "scores" "event_log")
+while [ $ITERATIONS -lt $MAX_ITERATIONS ]; do
+    ((ITERATIONS++))
 
-for TABLE in "${TABLES[@]}"; do
-    echo "  Truncating $TABLE..."
-    oc exec -n "$NAMESPACE" langfuse-clickhouse-shard0-0 -- \
-        clickhouse-client --password "$CH_PASSWORD" \
-        --query "TRUNCATE TABLE IF EXISTS $TABLE ON CLUSTER default" 2>/dev/null || \
-    oc exec -n "$NAMESPACE" langfuse-clickhouse-shard0-0 -- \
-        clickhouse-client --password "$CH_PASSWORD" \
-        --query "ALTER TABLE $TABLE DELETE WHERE 1=1" 2>/dev/null || \
-        echo "    Warning: Could not truncate $TABLE (may not exist)"
+    # Fetch traces
+    RESPONSE=$(curl -s -X GET \
+        "${LANGFUSE_HOST}/api/public/traces?limit=${LIMIT}" \
+        -H "Authorization: Basic ${AUTH}" \
+        -H "Content-Type: application/json")
+
+    # Check for error
+    if echo "$RESPONSE" | grep -q '"error"'; then
+        echo "Error fetching traces: $RESPONSE"
+        exit 1
+    fi
+
+    # Extract trace IDs using jq or grep/sed fallback
+    if command -v jq &> /dev/null; then
+        TRACE_IDS=$(echo "$RESPONSE" | jq -r '.data[].id // empty' 2>/dev/null)
+        TOTAL=$(echo "$RESPONSE" | jq -r '.meta.totalItems // 0' 2>/dev/null)
+    else
+        # Fallback: extract IDs with grep/sed
+        TRACE_IDS=$(echo "$RESPONSE" | grep -o '"id":"[^"]*"' | sed 's/"id":"//g' | sed 's/"//g')
+        TOTAL="unknown"
+    fi
+
+    # If no traces found, we're done
+    if [ -z "$TRACE_IDS" ]; then
+        echo "No more traces found."
+        break
+    fi
+
+    TRACE_COUNT=$(echo "$TRACE_IDS" | wc -w | tr -d ' ')
+    echo "Iteration $ITERATIONS/$MAX_ITERATIONS: Found $TRACE_COUNT traces (Total in system: $TOTAL)..."
+
+    # Delete each trace
+    for TRACE_ID in $TRACE_IDS; do
+        echo "  Deleting trace: $TRACE_ID"
+        DELETE_RESPONSE=$(curl -s -X DELETE \
+            "${LANGFUSE_HOST}/api/public/traces/${TRACE_ID}" \
+            -H "Authorization: Basic ${AUTH}" \
+            -H "Content-Type: application/json")
+
+        if echo "$DELETE_RESPONSE" | grep -q '"error"'; then
+            echo "    Warning: Failed to delete trace $TRACE_ID: $DELETE_RESPONSE"
+        else
+            ((DELETED++))
+        fi
+    done
+
+    # Wait a moment for ClickHouse to process deletions
+    echo "  Waiting for deletions to propagate..."
+    sleep 3
+
+    # Check if traces are actually being deleted
+    if [ $ITERATIONS -gt 1 ]; then
+        NEW_RESPONSE=$(curl -s -X GET \
+            "${LANGFUSE_HOST}/api/public/traces?limit=1" \
+            -H "Authorization: Basic ${AUTH}" \
+            -H "Content-Type: application/json")
+
+        if command -v jq &> /dev/null; then
+            NEW_TOTAL=$(echo "$NEW_RESPONSE" | jq -r '.meta.totalItems // 0' 2>/dev/null)
+        else
+            NEW_TOTAL="unknown"
+        fi
+
+        if [ "$NEW_TOTAL" = "$TOTAL" ] && [ "$TOTAL" != "0" ] && [ "$TOTAL" != "unknown" ]; then
+            echo ""
+            echo "WARNING: Traces are not being deleted from the database."
+            echo "This usually means ClickHouse needs 'allow_nondeterministic_mutations' enabled."
+            echo "Run: ./fix-clickhouse-mutations.sh"
+            echo ""
+            break
+        fi
+    fi
 done
 
-echo "Clearing PostgreSQL tables..."
-
-# Get PostgreSQL password
-PG_PASSWORD=$(oc get secret langfuse-postgresql-auth -n "$NAMESPACE" -o jsonpath='{.data.password}' | base64 -d)
-
-if [ -z "$PG_PASSWORD" ]; then
-    echo "Warning: Could not retrieve PostgreSQL password, skipping PostgreSQL cleanup"
-else
-    # Delete from PostgreSQL tables (order matters due to foreign keys)
-    PG_TABLES=("scores" "observations" "traces" "trace_sessions")
-
-    for TABLE in "${PG_TABLES[@]}"; do
-        echo "  Deleting from $TABLE..."
-        oc exec -n "$NAMESPACE" langfuse-postgresql-0 -- \
-            psql -U langfuse -d postgres_langfuse -c "DELETE FROM $TABLE;" 2>/dev/null || \
-            echo "    Warning: Could not delete from $TABLE (may not exist or have dependencies)"
-    done
+if [ $ITERATIONS -ge $MAX_ITERATIONS ]; then
+    echo ""
+    echo "Reached maximum iterations ($MAX_ITERATIONS). Some traces may remain."
 fi
 
 echo ""
 echo "============================================================"
-echo "Langfuse traces have been cleared!"
+echo "Langfuse traces cleared!"
+echo "Deleted $DELETED traces."
 echo "============================================================"
-echo ""
-echo "Note: You may need to restart the Langfuse pods for changes to take effect:"
-echo "  oc rollout restart deployment/langfuse-web -n $NAMESPACE"
-echo "  oc rollout restart deployment/langfuse-worker -n $NAMESPACE"
