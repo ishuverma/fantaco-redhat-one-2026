@@ -31,9 +31,6 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 1
 fi
 
-# Create basic auth header
-AUTH=$(echo -n "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" | base64)
-
 echo "Fetching traces from Langfuse API..."
 
 # Counter for deleted traces
@@ -43,13 +40,11 @@ MAX_ITERATIONS=5
 LIMIT=100
 
 while [ $ITERATIONS -lt $MAX_ITERATIONS ]; do
-    ((ITERATIONS++))
+    ITERATIONS=$((ITERATIONS + 1))
 
     # Fetch traces
-    RESPONSE=$(curl -s -X GET \
-        "${LANGFUSE_HOST}/api/public/traces?limit=${LIMIT}" \
-        -H "Authorization: Basic ${AUTH}" \
-        -H "Content-Type: application/json")
+    RESPONSE=$(curl -s -u "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" \
+        "${LANGFUSE_HOST}/api/public/traces?limit=${LIMIT}")
 
     # Check for error
     if echo "$RESPONSE" | grep -q '"error"'; then
@@ -80,14 +75,13 @@ while [ $ITERATIONS -lt $MAX_ITERATIONS ]; do
     for TRACE_ID in $TRACE_IDS; do
         echo "  Deleting trace: $TRACE_ID"
         DELETE_RESPONSE=$(curl -s -X DELETE \
-            "${LANGFUSE_HOST}/api/public/traces/${TRACE_ID}" \
-            -H "Authorization: Basic ${AUTH}" \
-            -H "Content-Type: application/json")
+            -u "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" \
+            "${LANGFUSE_HOST}/api/public/traces/${TRACE_ID}")
 
         if echo "$DELETE_RESPONSE" | grep -q '"error"'; then
             echo "    Warning: Failed to delete trace $TRACE_ID: $DELETE_RESPONSE"
         else
-            ((DELETED++))
+            DELETED=$((DELETED + 1))
         fi
     done
 
@@ -97,10 +91,8 @@ while [ $ITERATIONS -lt $MAX_ITERATIONS ]; do
 
     # Check if traces are actually being deleted
     if [ $ITERATIONS -gt 1 ]; then
-        NEW_RESPONSE=$(curl -s -X GET \
-            "${LANGFUSE_HOST}/api/public/traces?limit=1" \
-            -H "Authorization: Basic ${AUTH}" \
-            -H "Content-Type: application/json")
+        NEW_RESPONSE=$(curl -s -u "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" \
+            "${LANGFUSE_HOST}/api/public/traces?limit=1")
 
         if command -v jq &> /dev/null; then
             NEW_TOTAL=$(echo "$NEW_RESPONSE" | jq -r '.meta.totalItems // 0' 2>/dev/null)
