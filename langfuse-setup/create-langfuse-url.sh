@@ -26,11 +26,12 @@ if [ -z "$BASE_DOMAIN" ]; then
 fi
 
 # Construct the Langfuse URL
-LANGFUSE_HOST="langfuse-${NAMESPACE}.${BASE_DOMAIN}"
-LANGFUSE_URL="https://${LANGFUSE_HOST}"
+ROUTE_HOSTNAME="langfuse-${NAMESPACE}.${BASE_DOMAIN}"
+LANGFUSE_HOST="https://${ROUTE_HOSTNAME}"
+LANGFUSE_URL="${LANGFUSE_HOST}"
 
 echo "Creating Langfuse Route..."
-echo "Host will be: $LANGFUSE_URL"
+echo "Host will be: $LANGFUSE_HOST"
 
 # Create the Route (points to langfuse-web Service that Helm will create)
 oc apply -n "$NAMESPACE" -f - <<EOF
@@ -39,7 +40,7 @@ kind: Route
 metadata:
   name: langfuse
 spec:
-  host: ${LANGFUSE_HOST}
+  host: ${ROUTE_HOSTNAME}
   port:
     targetPort: 3000
   tls:
