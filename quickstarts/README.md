@@ -209,11 +209,19 @@ make install NAMESPACE=rag-quickstart
 
 Since we are using the MaaS, the Huggingface token is optional
 
-Press Enter for Huggingface id
 
-The Tavily key is also optional 
+```
+Enter your Hugging Face token (or press Enter to skip):
+```
 
-Press Enter for Tavily id 
+**Press Enter**
+
+
+```
+Enter your TAVILY search API key (or press Enter to skip):
+```
+
+The Tavily key is also optional.  If you have one, provide it as that enables the Web Search capability
 
 
 ```bash
