@@ -71,7 +71,9 @@
       "Bash(git checkout:*)",
       "Bash(git fetch:*)",
       "Bash(git restore:*)",
-      "Bash(oc login:*)"
+      "Bash(oc login:*)",
+      "Bash(git pull:*)",
+      "Bash(./RHOAI-genAI-studio/view-project-labels.sh)"
     ],
     "deny": [],
     "ask": []

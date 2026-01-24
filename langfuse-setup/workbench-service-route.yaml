@@ -4,11 +4,11 @@ kind: NetworkPolicy
 metadata:
   name: chatbot-8002-ingress
   labels:
-    app: myworkbench
+    app: my-workbench
 spec:
   podSelector:
     matchLabels:
-      app: myworkbench
+      app: my-workbench
   policyTypes:
     - Ingress
   ingress:
@@ -25,10 +25,10 @@ kind: Service
 metadata:
   name: chatbot-8002
   labels:
-    app: myworkbench
+    app: my-workbench
 spec:
   selector:
-    app: myworkbench
+    app: my-workbench
   ports:
     - name: chatbot
       port: 8002
@@ -41,7 +41,7 @@ kind: Route
 metadata:
   name: chatbot-8002
   labels:
-    app: myworkbench
+    app: my-workbench
 spec:
   port:
     targetPort: chatbot
