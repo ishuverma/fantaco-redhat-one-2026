@@ -20,10 +20,13 @@ print(f"Model:    {INFERENCE_MODEL}")
 # Initialize client
 client = LlamaStackClient(base_url=LLAMA_STACK_BASE_URL)
 
+question = "Who is the current F1 World Champion?"
+print(f"Question: {question}")
+
 # Create response without web search (non-streaming)
 response = client.responses.create(
     model=INFERENCE_MODEL,
-    input="Who is the current F1 World Champion?",
+    input=question,
     stream=False,
 )
 
