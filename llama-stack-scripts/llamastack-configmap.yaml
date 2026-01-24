@@ -38,30 +38,28 @@ data:
         config:
           db_path: /opt/app-root/src/.llama/distributions/rh/milvus.db
           kvstore:
-            backend: default
-            namespace: "milvus"
-          persistence:
-            backend: default
-            namespace: "milvus_persistence"
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/milvus_registry.db
+            namespace: null
       agents:
       - provider_id: meta-reference
         provider_type: inline::meta-reference
         config:
-          persistence:
-            agent_state:
-              backend: default
-              namespace: "agent_state"
-            responses:
-              backend: sql
-              namespace: "agents"
-              table_name: "responses"
+          persistence_store:
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/agents_store.db
+            namespace: null
+          responses_store:
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/responses_store.db
       eval:
       - provider_id: meta-reference
         provider_type: inline::meta-reference
         config:
           kvstore:
-            backend: default
-            namespace: "eval"
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/eval_store.db
+            namespace: null
       safety:
       - provider_id: llama-guard
         provider_type: inline::llama-guard
@@ -71,23 +69,24 @@ data:
         provider_type: inline::localfs
         config:
           metadata_store:
-            backend: sql
-            namespace: "files"
-            table_name: "files_metadata"
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/files_metadata.db
           storage_dir: /opt/app-root/src/.llama/distributions/rh/files
       datasetio:
       - provider_id: huggingface
         provider_type: remote::huggingface
         config:
           kvstore:
-            backend: default
-            namespace: "huggingface"
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/huggingface_datasetio.db
+            namespace: null
       - provider_id: localfs
         provider_type: inline::localfs
         config:
           kvstore:
-            backend: default
-            namespace: "localfs"
+            type: sqlite
+            db_path: /opt/app-root/src/.llama/distributions/rh/localfs_datasetio.db
+            namespace: null
       scoring:
       - provider_id: basic
         provider_type: inline::basic
@@ -108,8 +107,8 @@ data:
         provider_type: remote::model-context-protocol
         config: {}
     metadata_store:
-      backend: default
-      namespace: "metadata"
+      type: sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/metadata_store.db
     storage:
       backends:
         default:
