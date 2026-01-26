@@ -579,6 +579,8 @@ This script:
 - POSTs the flow to Langflow API
 - Outputs the flow ID (set it with `export LANGFLOW_FLOW_ID=<id>`)
 
+![After Import](images/after-import-2.png)
+
 ### Step 2: Smoke Test
 
 Run a quick smoke test to verify the flow executes:
