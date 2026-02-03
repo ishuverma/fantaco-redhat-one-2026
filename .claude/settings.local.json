@@ -73,7 +73,8 @@
       "Bash(git restore:*)",
       "Bash(oc login:*)",
       "Bash(git pull:*)",
-      "Bash(./RHOAI-genAI-studio/view-project-labels.sh)"
+      "Bash(./RHOAI-genAI-studio/view-project-labels.sh)",
+      "Bash(oc create:*)"
     ],
     "deny": [],
     "ask": []
