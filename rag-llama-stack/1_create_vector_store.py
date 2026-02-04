@@ -3,6 +3,7 @@ import requests
 import logging
 import sys
 import time
+from pathlib import Path
 from dotenv import load_dotenv
 from llama_stack_client import LlamaStackClient
 from llama_stack_client import APIConnectionError, APIStatusError
@@ -58,17 +59,38 @@ except Exception as e:
     logger.error("Make sure Llama Stack server is running")
     sys.exit(1)
 
+# Define multiple files to process
+# Can be URLs or local file paths
+FILES_TO_PROCESS = [
+    {
+        "source": "https://raw.githubusercontent.com/burrsutter/fantaco-redhat-one-2026/refs/heads/main/rag-llama-stack/source_docs/FantaCoFabulousHRBenefits_clean.txt",
+        "name": "hr-benefits-clean.txt",
+        "type": "url"
+    },
+    # Add more files here:
+    # {
+    #     "source": "https://example.com/another-doc.txt",
+    #     "name": "another-doc.txt",
+    #     "type": "url"
+    # },
+    # {
+    #     "source": "/path/to/local/file.txt",
+    #     "name": "local-file.txt",
+    #     "type": "local"
+    # },
+]
+
 # Create vector store with embedding model configuration and hybrid search
 try:
     logger.info("Creating vector store...")
     vs = client.vector_stores.create(
-        name="hr-benefits-hybrid",
+        name="hr-benefits-hybrid-multi",
         extra_body={
             "embedding_model": EMBEDDING_MODEL,
             "embedding_dimension": EMBEDDING_DIMENSION,
-            "search_mode": "hybrid",  # Enable hybrid search (keyword + semantic)
-            "bm25_weight": 0.5,  # Weight for keyword search (BM25)
-            "semantic_weight": 0.5,  # Weight for semantic search
+            "search_mode": "hybrid",
+            "bm25_weight": 0.5,
+            "semantic_weight": 0.5,
         }
     )
     logger.info(f"✓ Vector store created: {vs.id}")
@@ -83,132 +105,172 @@ except Exception as e:
     logger.error(f"Unexpected error creating vector store: {e}")
     sys.exit(1)
 
-# Download clean text file
-url = "https://raw.githubusercontent.com/burrsutter/fantaco-redhat-one-2026/refs/heads/main/rag-llama-stack/source_docs/FantaCoFabulousHRBenefits_clean.txt"
-try:
-    logger.info(f"Downloading document...")
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()  # Raise error for bad status codes
-    text_content = response.text
+# Process each file
+uploaded_files = []
+failed_files = []
 
-    if not text_content or len(text_content) < 100:
-        logger.error("Downloaded file appears to be empty or too small")
-        sys.exit(1)
+logger.info("-" * 80)
+logger.info(f"Processing {len(FILES_TO_PROCESS)} file(s)...")
+logger.info("-" * 80)
 
-    logger.info(f"✓ Downloaded {len(text_content)} characters")
-except requests.exceptions.Timeout:
-    logger.error(f"Download timed out after 30 seconds")
-    sys.exit(1)
-except requests.exceptions.ConnectionError:
-    logger.error(f"Failed to connect to {url}")
-    logger.error("Check your internet connection")
-    sys.exit(1)
-except requests.exceptions.HTTPError as e:
-    logger.error(f"HTTP error downloading file: {e.response.status_code}")
-    sys.exit(1)
-except Exception as e:
-    logger.error(f"Unexpected error downloading file: {e}")
-    sys.exit(1)
+for idx, file_config in enumerate(FILES_TO_PROCESS, 1):
+    source = file_config["source"]
+    name = file_config["name"]
+    file_type = file_config["type"]
 
-# Upload as text file
-try:
-    logger.info("Uploading document to Llama Stack...")
-    text_buffer = BytesIO(text_content.encode('utf-8'))
-    text_buffer.name = "hr-benefits-clean.txt"
+    logger.info(f"\n[{idx}/{len(FILES_TO_PROCESS)}] Processing: {name}")
 
-    uploaded_file = client.files.create(
-        file=text_buffer,
-        purpose="assistants"
-    )
-    logger.info(f"✓ File uploaded: {uploaded_file.id}")
-except APIConnectionError as e:
-    logger.error("Lost connection to Llama Stack server during upload")
-    sys.exit(1)
-except APIStatusError as e:
-    logger.error(f"API error uploading file: {e.status_code} - {e.message}")
-    sys.exit(1)
-except Exception as e:
-    logger.error(f"Unexpected error uploading file: {e}")
-    sys.exit(1)
+    try:
+        # Load file content based on type
+        if file_type == "url":
+            logger.info(f"  Downloading from URL...")
+            response = requests.get(source, timeout=30)
+            response.raise_for_status()
+            text_content = response.text
+        elif file_type == "local":
+            logger.info(f"  Reading local file...")
+            file_path = Path(source)
+            if not file_path.exists():
+                raise FileNotFoundError(f"File not found: {source}")
+            text_content = file_path.read_text(encoding='utf-8')
+        else:
+            raise ValueError(f"Unknown file type: {file_type}")
 
-# Attach file to vector store with custom chunking strategy
-try:
-    logger.info("Attaching file to vector store...")
-    logger.info(f"  Chunking: 100 tokens per chunk, 10 token overlap")
+        if not text_content or len(text_content) < 100:
+            raise ValueError("File appears to be empty or too small")
 
-    client.vector_stores.files.create(
-        vector_store_id=vs.id,
-        file_id=uploaded_file.id,
-        chunking_strategy={
-            "type": "static",
-            "static": {
-                "max_chunk_size_tokens": 100,
-                "chunk_overlap_tokens": 10
+        logger.info(f"  ✓ Loaded {len(text_content)} characters")
+
+        # Upload to Llama Stack
+        logger.info("  Uploading to Llama Stack...")
+        text_buffer = BytesIO(text_content.encode('utf-8'))
+        text_buffer.name = name
+
+        uploaded_file = client.files.create(
+            file=text_buffer,
+            purpose="assistants"
+        )
+        logger.info(f"  ✓ File uploaded: {uploaded_file.id}")
+
+        # Attach to vector store
+        logger.info("  Attaching to vector store...")
+        client.vector_stores.files.create(
+            vector_store_id=vs.id,
+            file_id=uploaded_file.id,
+            chunking_strategy={
+                "type": "static",
+                "static": {
+                    "max_chunk_size_tokens": 100,
+                    "chunk_overlap_tokens": 10
+                }
             }
-        }
-    )
-    logger.info(f"✓ File attached to vector store")
-except APIConnectionError as e:
-    logger.error("Lost connection to Llama Stack server during file attachment")
-    sys.exit(1)
-except APIStatusError as e:
-    logger.error(f"API error attaching file: {e.status_code} - {e.message}")
-    sys.exit(1)
-except Exception as e:
-    logger.error(f"Unexpected error attaching file: {e}")
-    sys.exit(1)
+        )
+        logger.info(f"  ✓ File attached to vector store")
+
+        uploaded_files.append({
+            "name": name,
+            "file_id": uploaded_file.id,
+            "source": source
+        })
+
+    except requests.exceptions.Timeout:
+        logger.error(f"  ✗ Download timed out for {name}")
+        failed_files.append({"name": name, "error": "Timeout"})
+    except requests.exceptions.ConnectionError:
+        logger.error(f"  ✗ Connection error for {name}")
+        failed_files.append({"name": name, "error": "Connection error"})
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"  ✗ HTTP error {e.response.status_code} for {name}")
+        failed_files.append({"name": name, "error": f"HTTP {e.response.status_code}"})
+    except FileNotFoundError as e:
+        logger.error(f"  ✗ {e}")
+        failed_files.append({"name": name, "error": "File not found"})
+    except APIConnectionError as e:
+        logger.error(f"  ✗ Lost connection to Llama Stack server")
+        failed_files.append({"name": name, "error": "API connection error"})
+    except APIStatusError as e:
+        logger.error(f"  ✗ API error: {e.status_code} - {e.message}")
+        failed_files.append({"name": name, "error": f"API error {e.status_code}"})
+    except Exception as e:
+        logger.error(f"  ✗ Unexpected error: {e}")
+        failed_files.append({"name": name, "error": str(e)})
+
+# Summary
+logger.info("\n" + "=" * 80)
+logger.info("PROCESSING SUMMARY")
+logger.info("=" * 80)
+logger.info(f"Successfully uploaded: {len(uploaded_files)}/{len(FILES_TO_PROCESS)} file(s)")
+
+if uploaded_files:
+    logger.info("\nSuccessful uploads:")
+    for f in uploaded_files:
+        logger.info(f"  ✓ {f['name']} (ID: {f['file_id']})")
+
+if failed_files:
+    logger.info(f"\nFailed uploads: {len(failed_files)}")
+    for f in failed_files:
+        logger.info(f"  ✗ {f['name']}: {f['error']}")
 
 # Check file processing status
-logger.info("-" * 80)
-logger.info("Checking file processing status...")
-logger.info("Waiting 10 seconds for processing to complete...")
-time.sleep(10)
+if uploaded_files:
+    logger.info("\n" + "-" * 80)
+    logger.info("Checking file processing status...")
+    logger.info("Waiting 10 seconds for processing to complete...")
+    time.sleep(10)
 
-try:
-    files = client.vector_stores.files.list(vector_store_id=vs.id)
-    file_list = list(files)
+    try:
+        files = client.vector_stores.files.list(vector_store_id=vs.id)
+        file_list = list(files)
 
-    if not file_list:
-        logger.warning("No files found in vector store")
-        sys.exit(1)
-
-    for f in file_list:
-        logger.info(f"File ID: {f.id}")
-        logger.info(f"Status: {f.status}")
-
-        if f.status == "completed":
-            logger.info("✓ File processing completed successfully!")
-            logger.info("\nVector store is ready for querying")
-            logger.info(f"Vector store ID: {vs.id}")
-        elif f.status == "failed":
-            logger.error("✗ File processing failed!")
-
-            # Try to get detailed error information
-            if hasattr(f, 'last_error') and f.last_error:
-                logger.error(f"Error details: {f.last_error}")
-
-            # Show full file object for debugging
-            logger.error(f"\nFull file object: {f}")
-
-            logger.error("\nTroubleshooting suggestions:")
-            logger.error("1. Check that the embedding model is available on the server")
-            logger.error("   Current model: " + EMBEDDING_MODEL)
-            logger.error("2. Verify EMBEDDING_DIMENSION matches the model")
-            logger.error(f"   Current dimension: {EMBEDDING_DIMENSION}")
-            logger.error("3. Check server logs for detailed error messages")
-            logger.error("4. Try a different embedding model in .env file")
-            sys.exit(1)
-        elif f.status == "in_progress":
-            logger.warning("File is still processing. It may take a few more moments.")
-            logger.info("Run 2_list_available_vector_stores.py later to check status")
+        if not file_list:
+            logger.warning("No files found in vector store")
         else:
-            logger.warning(f"Unexpected file status: {f.status}")
+            logger.info(f"\nFound {len(file_list)} file(s) in vector store:")
+            completed_count = 0
+            failed_count = 0
+            in_progress_count = 0
 
-except APIConnectionError as e:
-    logger.error("Lost connection to Llama Stack server while checking status")
-    logger.warning("File may still be processing - check later")
-except Exception as e:
-    logger.error(f"Error checking file status: {e}")
-    logger.warning("File may still be processing - check manually")
+            for f in file_list:
+                logger.info(f"\n  File ID: {f.id}")
+                logger.info(f"  Status: {f.status}")
 
-logger.info("-" * 80)
+                if f.status == "completed":
+                    logger.info("  ✓ Processing completed")
+                    completed_count += 1
+                elif f.status == "failed":
+                    logger.error("  ✗ Processing failed")
+                    if hasattr(f, 'last_error') and f.last_error:
+                        logger.error(f"  Error: {f.last_error}")
+                    failed_count += 1
+                elif f.status == "in_progress":
+                    logger.warning("  ⏳ Still processing")
+                    in_progress_count += 1
+
+            logger.info("\n" + "-" * 80)
+            logger.info(f"Status Summary:")
+            logger.info(f"  Completed: {completed_count}")
+            logger.info(f"  Failed: {failed_count}")
+            logger.info(f"  In Progress: {in_progress_count}")
+
+            if completed_count > 0:
+                logger.info("\n✓ Vector store is ready for querying")
+                logger.info(f"Vector store ID: {vs.id}")
+
+            if failed_count > 0:
+                logger.error("\nSome files failed to process. Check:")
+                logger.error("1. Embedding model is available: " + EMBEDDING_MODEL)
+                logger.error(f"2. Embedding dimension matches: {EMBEDDING_DIMENSION}")
+                logger.error("3. Server logs for detailed errors")
+
+            if in_progress_count > 0:
+                logger.info("\nSome files are still processing.")
+                logger.info("Run 2_list_available_vector_stores.py later to check status")
+
+    except APIConnectionError as e:
+        logger.error("Lost connection to Llama Stack server while checking status")
+        logger.warning("Files may still be processing - check later")
+    except Exception as e:
+        logger.error(f"Error checking file status: {e}")
+        logger.warning("Files may still be processing - check manually")
+
+logger.info("=" * 80)
